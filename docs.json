@@ -72,5 +72,31 @@
         "href": "https://github.com/xdr-labs/stellar-alert-case-relay-docs"
       }
     ]
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://stellar-relay.xdr.ooo"
+  },
+  "favicon": "/favicon.svg",
+  "appearance": {
+    "default": "system",
+    "strict": false
+  },
+  "background": {
+    "decoration": "gradient"
+  },
+  "seo": {
+    "metatags": {
+      "canonical": "https://stellar-relay.xdr.ooo",
+      "robots": "index, follow",
+      "description": "Stellar Alert & Case Relay forwards Stellar Cyber alerts and cases into existing SIEM and SOC workflows over TCP/NDJSON."
+    }
+  },
+  "icons": {
+    "library": "fontawesome"
+  },
+  "styling": {
+    "eyebrows": "breadcrumbs"
   }
 }
