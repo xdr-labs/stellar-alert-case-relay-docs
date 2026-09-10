@@ -55,7 +55,11 @@
           },
           {
             "group": "운영",
-            "pages": []
+            "pages": [
+              "ko/operations",
+              "ko/output-format",
+              "ko/troubleshooting"
+            ]
           }
         ]
       }
