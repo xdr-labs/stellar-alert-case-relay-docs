@@ -88,7 +88,6 @@
   },
   "seo": {
     "metatags": {
-      "canonical": "https://stellar-relay.xdr.ooo",
       "robots": "index, follow",
       "description": "Stellar Alert & Case Relay forwards Stellar Cyber alerts and cases into existing SIEM and SOC workflows over TCP/NDJSON."
     }
