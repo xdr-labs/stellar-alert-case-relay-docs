@@ -11,10 +11,52 @@
   "navigation": {
     "languages": [
       {
-        "language": "en"
+        "language": "en",
+        "default": true,
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "index"
+            ]
+          },
+          {
+            "group": "Get started",
+            "pages": [
+              "quickstart",
+              "configuration"
+            ]
+          },
+          {
+            "group": "Operations",
+            "pages": [
+              "operations",
+              "output-format",
+              "troubleshooting"
+            ]
+          }
+        ]
       },
       {
-        "language": "ko"
+        "language": "ko",
+        "groups": [
+          {
+            "group": "개요",
+            "pages": [
+              "ko/index"
+            ]
+          },
+          {
+            "group": "시작하기",
+            "pages": [
+              "ko/quickstart"
+            ]
+          },
+          {
+            "group": "운영",
+            "pages": []
+          }
+        ]
       }
     ]
   },
