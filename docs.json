@@ -9,18 +9,12 @@
     "dark": "#115E59"
   },
   "navigation": {
-    "groups": [
+    "languages": [
       {
-        "group": "Overview",
-        "pages": ["index"]
+        "language": "en"
       },
       {
-        "group": "Get started",
-        "pages": ["quickstart", "configuration"]
-      },
-      {
-        "group": "Operations",
-        "pages": ["operations", "output-format", "troubleshooting"]
+        "language": "ko"
       }
     ]
   },
