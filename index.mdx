@@ -3,17 +3,15 @@ title: "Stellar Alert & Case Relay"
 description: "Forward Stellar Cyber alerts and cases into existing SIEM and SOC workflows."
 ---
 
-Stellar Alert & Case Relay is a lightweight Python daemon for environments that already operate a SIEM or SOC portal and want Stellar Cyber detections delivered into those existing workflows.
+Stellar Alert & Case Relay is a lightweight Python daemon for organizations that already operate a SIEM or SOC portal and want Stellar Cyber detections delivered directly into those existing workflows.
 
 <Info>
-The original operational guide calls the script **Stellar Alert + Case Syslog Daemon**. Its documented wire format is **newline-delimited JSON (NDJSON) over TCP**, so this documentation uses the broader product name **Stellar Alert & Case Relay**.
+The runtime script and CLI retain the historical **Syslog** naming, but the documented wire format is **newline-delimited JSON (NDJSON) over TCP**.
 </Info>
 
 ## Why it exists
 
-Many on-prem SOC teams already have established SIEM dashboards, monitoring portals, and operational processes. They still need Stellar Cyber NDR/XDR alerts and cases inside those systems without relying on manual export or one-off integration work.
-
-The relay provides a simple bridge:
+On-prem SOC teams often already have established SIEM dashboards, monitoring portals, and operational processes. They still need Stellar Cyber NDR/XDR alerts and cases inside those systems without manual exports or one-off integrations.
 
 ```text
 Stellar Cyber API
@@ -32,10 +30,10 @@ Customer SIEM / SOC Portal
     Pulls alerts and cases from the Stellar Cyber API and forwards them to downstream SOC systems.
   </Card>
   <Card title="Flexible stream modes" icon="sliders">
-    Run alert-only, case-only, or both streams at the same time.
+    Run alert-only, case-only, or both streams from the same daemon.
   </Card>
-  <Card title="Operations-oriented delivery" icon="rotate">
-    The operational guide identifies fetch checkpointing, send retry/recovery, and backfill as built-in capabilities.
+  <Card title="Built for operations" icon="rotate">
+    Supports fetch checkpointing, send retry/recovery, and backfill for continuous operation.
   </Card>
   <Card title="Separate destinations" icon="route">
     Alert and case streams can use independent destination IP addresses and ports.
@@ -44,36 +42,31 @@ Customer SIEM / SOC Portal
 
 ## At a glance
 
-| Item | Documented behavior |
+| Item | Behavior |
 | --- | --- |
 | Source | Stellar Cyber API |
 | Runtime | Python daemon |
 | Transport | TCP |
 | Payload framing | NDJSON, one JSON object per line |
 | Stream modes | Alert-only, case-only, or both |
-| Alert destination | Independent IP and TCP port |
-| Case destination | Independent IP and TCP port |
-| Operational features | Fetch checkpoint, retry/recovery, backfill, separate destinations |
+| Destinations | Independent alert and case IP/port settings |
+| Operations | Checkpoint, retry/recovery, backfill, systemd |
 
 ## Typical deployment
 
-A common deployment runs the script continuously under `systemd` on a Linux host with network access to both the Stellar Cyber API and the destination SIEM/SOC receiver.
-
-<Note>
-The current source material does not specify the exact API authentication bootstrap, checkpoint file/storage format, retry algorithm, backfill controls, or emitted JSON schema. Those details should be verified against the runtime source before being documented as implementation guarantees.
-</Note>
+The relay runs on a Linux host that can reach both Stellar Cyber and the destination SIEM/SOC receiver. For long-running deployments, run it under `systemd` so it starts at boot and automatically recovers from process failures.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
     Start an alert stream, a case stream, or both.
   </Card>
   <Card title="Configuration" icon="gear" href="/configuration">
-    Understand the documented command-line options and stream enablement rules.
+    Configure stream intervals, destinations, and case options.
   </Card>
   <Card title="Run with systemd" icon="server" href="/operations">
-    Configure the daemon to start at boot and recover from failures.
+    Keep the relay running continuously and inspect service logs.
   </Card>
-  <Card title="Output format" icon="brackets-curly" href="/output-format">
-    Prepare a receiver for TCP NDJSON delivery.
+  <Card title="Output format" icon="code" href="/output-format">
+    Prepare your receiver for TCP NDJSON delivery.
   </Card>
 </CardGroup>
