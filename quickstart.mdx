@@ -1,0 +1,101 @@
+---
+title: "Quickstart"
+description: "Start Stellar alert forwarding, case forwarding, or both streams."
+---
+
+At least one stream must be fully configured. Alert and case streams can be enabled independently or together.
+
+## Before you start
+
+You need:
+
+- Python 3 on the host running the relay.
+- Network connectivity from the relay host to the Stellar Cyber API.
+- Network connectivity from the relay host to each destination TCP listener.
+- The runtime script `Stellar_Alert_Case_Syslog.py` and whatever Stellar API access configuration that script requires.
+
+<Warning>
+The available operational guide does not document the script's API credential/bootstrap mechanism. Configure authentication according to the runtime implementation rather than inventing new environment variables or command-line flags.
+</Warning>
+
+## Alert only
+
+Use this mode when only alert forwarding is required.
+
+```bash
+python3 Stellar_Alert_Case_Syslog.py \
+  --alert-interval 60 \
+  --alert-syslog-ip 10.10.10.20 \
+  --alert-syslog-port 5201
+```
+
+The alert stream requires all three of these settings: interval, destination IP, and destination port.
+
+## Case only
+
+The operational guide recommends the following case configuration:
+
+```bash
+python3 Stellar_Alert_Case_Syslog.py \
+  --case-interval 3600 \
+  --case-syslog-ip 10.10.10.20 \
+  --case-syslog-port 5142 \
+  --case-include-summary \
+  --no-case-format-summary \
+  --case-fetch-timeout 90
+```
+
+The case stream requires interval, destination IP, and destination port. The additional case options above are shown in the guide's recommended example.
+
+## Alert and case together
+
+Configure both complete streams in the same process:
+
+```bash
+python3 Stellar_Alert_Case_Syslog.py \
+  --alert-interval 60 \
+  --alert-syslog-ip 10.10.10.20 \
+  --alert-syslog-port 5201 \
+  --case-interval 3600 \
+  --case-syslog-ip 10.10.10.20 \
+  --case-syslog-port 5142 \
+  --case-include-summary \
+  --no-case-format-summary \
+  --case-fetch-timeout 90
+```
+
+The two streams may point to the same receiver or to separate destinations.
+
+## Stream enablement rules
+
+The script's documented configuration rules are strict:
+
+| Stream | Required settings |
+| --- | --- |
+| Alert | `--alert-interval`, `--alert-syslog-ip`, `--alert-syslog-port` |
+| Case | `--case-interval`, `--case-syslog-ip`, `--case-syslog-port` |
+
+- If a required option is missing after any option for that stream has been supplied, that stream is an error.
+- If every option for a stream is omitted, that stream is disabled.
+- At least one stream therefore needs to be fully configured for a useful relay process.
+
+## What the receiver gets
+
+The documented output is TCP carrying newline-delimited JSON (NDJSON):
+
+```text
+{one JSON object}\n
+{next JSON object}\n
+...
+```
+
+Each JSON object occupies one line. The operational guide says alert and case records can be distinguished using fields in the emitted JSON, but it does not provide the exact field names or schema.
+
+<CardGroup cols={2}>
+  <Card title="Configuration reference" icon="gear" href="/configuration">
+    Review the documented CLI options and their scope.
+  </Card>
+  <Card title="Run continuously" icon="server" href="/operations">
+    Install the daemon as a systemd service.
+  </Card>
+</CardGroup>
