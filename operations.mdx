@@ -3,7 +3,7 @@ title: "Run continuously with systemd"
 description: "Keep the relay running at boot, recover from failures, and inspect service logs."
 ---
 
-The operational guide recommends running the relay as a `systemd` service so it starts with the host and can recover automatically from process failures.
+Run the relay as a `systemd` service so it starts with the host and automatically recovers from process failures.
 
 ## Create the service unit
 
@@ -13,7 +13,7 @@ Create:
 /etc/systemd/system/stellar-alert-case.service
 ```
 
-The guide uses the following deployment example:
+Example:
 
 ```ini
 [Unit]
@@ -44,12 +44,10 @@ WantedBy=multi-user.target
 ```
 
 <Warning>
-The user, group, working directory, script path, destination addresses, and ports above are examples from the operational guide. Change them to match your environment.
+Replace the example user, group, working directory, script path, destination addresses, and ports with values for your environment.
 </Warning>
 
-## Enable and start the service
-
-After writing or changing the unit file, use the standard systemd workflow:
+## Enable and start
 
 ```bash
 sudo systemctl daemon-reload
@@ -57,9 +55,10 @@ sudo systemctl enable --now stellar-alert-case.service
 sudo systemctl status stellar-alert-case.service
 ```
 
-To restart it after a configuration change:
+After changing the unit file:
 
 ```bash
+sudo systemctl daemon-reload
 sudo systemctl restart stellar-alert-case.service
 ```
 
@@ -75,41 +74,39 @@ To inspect the effective unit file:
 systemctl cat stellar-alert-case.service
 ```
 
-## Recovery behavior
+## Automatic recovery
 
-The guide explicitly recommends:
+The recommended service settings are:
 
 ```ini
 Restart=on-failure
 RestartSec=10
 ```
 
-This allows `systemd` to restart the daemon after a process failure while avoiding an immediate tight restart loop.
+This allows `systemd` to restart the daemon after a process failure without creating an immediate tight restart loop.
 
-The product overview also identifies these relay capabilities as being designed for real operations:
+## Operational features
+
+The relay is designed for continuous operation and includes:
 
 - Fetch checkpointing
 - Send retry/recovery
 - Backfill
 - Separate alert and case destinations
 
-<Note>
-The current guide names checkpoint, retry/recovery, and backfill as capabilities but does not define their persistence format, retry schedule, retention window, duplicate-handling behavior, or backfill controls. Those implementation details require verification against the runtime source.
-</Note>
-
 ## Operational tips
 
-- Use `Restart=on-failure` for automatic process recovery.
+- Keep `Restart=on-failure` enabled for automatic process recovery.
 - Use `--debug` only when troubleshooting.
 - Verify TCP reachability from the relay host to every configured destination.
-- Keep alert and case destinations separate when downstream workflows require independent ingestion paths.
-- After changing command-line options in the unit file, run `daemon-reload` before restarting the service.
+- Use separate alert and case listeners when the downstream workflows differ.
+- After editing the unit file, always run `systemctl daemon-reload` before restarting the service.
 
 <CardGroup cols={2}>
   <Card title="Configuration" icon="gear" href="/configuration">
-    Review stream requirements and the documented CLI options.
+    Review stream requirements and available options.
   </Card>
   <Card title="Troubleshooting" icon="wrench" href="/troubleshooting">
-    Diagnose incomplete stream configuration and delivery problems.
+    Diagnose configuration and delivery problems.
   </Card>
 </CardGroup>
