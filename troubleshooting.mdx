@@ -3,7 +3,7 @@ title: "Troubleshooting"
 description: "Check stream configuration, systemd state, and TCP NDJSON delivery."
 ---
 
-Start with configuration completeness. The relay treats alert and case streams independently, and a partially configured stream is an error.
+Start with configuration completeness. Alert and case streams are configured independently, and a partially configured stream is treated as an error.
 
 ## A stream will not start
 
@@ -25,44 +25,49 @@ Verify that all required settings for the affected stream are present.
 --case-syslog-port
 ```
 
-If every option for a stream is omitted, that stream is disabled. If configuration for a stream is started but one of its required options is missing, the guide says that stream is an error.
+If all options for a stream are omitted, that stream is disabled. If configuration for a stream is started but a required option is missing, that stream is an error.
 
 ## The service is not running
 
-Check the unit state:
+Check the service state:
 
 ```bash
 sudo systemctl status stellar-alert-case.service
 ```
 
-If you recently edited the unit file:
+If the unit file was recently edited:
 
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl restart stellar-alert-case.service
 ```
 
-Follow the service journal while reproducing the problem:
+Follow logs while reproducing the problem:
 
 ```bash
 journalctl -u stellar-alert-case.service -f
 ```
 
-The guide recommends `Restart=on-failure` and `RestartSec=10` for automatic recovery.
+For automatic recovery, keep:
+
+```ini
+Restart=on-failure
+RestartSec=10
+```
 
 ## The receiver gets no records
 
-Check the path from the relay host to the configured destination:
+Check the path from the relay host to the destination:
 
-1. Confirm the destination IP and port are correct for the affected stream.
+1. Confirm the destination IP and port for the affected stream.
 2. Confirm the receiver is listening on that TCP port.
-3. Confirm network policy or firewall rules allow the relay host to connect.
-4. Confirm the receiver expects newline-delimited JSON rather than traditional syslog framing.
-5. Confirm that the corresponding alert or case stream is fully enabled.
+3. Confirm firewall and network policy allow the connection.
+4. Confirm the corresponding alert or case stream is fully enabled.
+5. Confirm the receiver expects newline-delimited JSON over TCP.
 
 ## The receiver cannot parse records
 
-The documented wire format is one JSON object per line over TCP.
+The expected framing is:
 
 ```text
 JSON object + newline
@@ -70,44 +75,41 @@ JSON object + newline
 ...
 ```
 
-The guide does not provide a complete JSON schema. Validate parsing against real output before creating field mappings in a SIEM or SOC portal.
+Do not configure a parser that expects one large JSON document or traditional RFC syslog framing. Validate mappings with representative events from the deployed relay.
 
 ## Case fetching needs investigation
 
-The guide's recommended case example includes:
+The recommended case configuration includes:
 
 ```bash
---case-fetch-timeout 90
-```
-
-It also recommends:
-
-```bash
---case-include-summary
+--case-fetch-timeout 90 \
+--case-include-summary \
 --no-case-format-summary
 ```
 
-The exact timeout units and the complete semantics of the summary-formatting flags are not described in the available guide, so verify those behaviors against the runtime source before changing them for production.
+Check these settings together with Stellar Cyber API reachability when case forwarding is delayed or incomplete.
 
-## Debugging
+## Debug mode
 
-The operations guide says to use `--debug` only when troubleshooting.
+Use `--debug` only while troubleshooting.
 
 <Warning>
-Do not leave debug mode enabled indefinitely in production unless the runtime implementation has been reviewed for log volume and sensitive-data handling.
+Disable debug mode after troubleshooting unless you intentionally need the additional logging in production.
 </Warning>
 
-## What still requires source verification
+## Quick checks
 
-The available guide is enough to document basic deployment and operation, but it does not define all implementation behavior. Source verification is still required for:
-
-- Stellar Cyber API authentication and endpoint configuration
-- Full CLI option list, defaults, and numeric units
-- Fetch checkpoint location and persistence semantics
-- Retry schedule and duplicate-handling behavior
-- Backfill configuration and limits
-- Alert/case JSON schemas and discriminator fields
-- Case summary transformation semantics
-- Log file destinations beyond the systemd journal
-
-Once the runtime source is available in GitHub, these items can be converted from caveats into exact reference documentation.
+<CardGroup cols={2}>
+  <Card title="Service state" icon="server">
+    Confirm the systemd unit is active and inspect the journal for runtime errors.
+  </Card>
+  <Card title="Stream completeness" icon="list-check">
+    Make sure every enabled stream has interval, destination IP, and destination port.
+  </Card>
+  <Card title="TCP reachability" icon="network-wired">
+    Verify the relay host can reach each configured destination listener.
+  </Card>
+  <Card title="NDJSON parsing" icon="code">
+    Confirm the receiver treats each newline-delimited JSON object as one event.
+  </Card>
+</CardGroup>
