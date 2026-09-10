@@ -1,0 +1,35 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Stellar Alert & Case Relay",
+  "description": "Forward Stellar Cyber alerts and cases into existing SIEM and SOC workflows over TCP/NDJSON.",
+  "colors": {
+    "primary": "#0F766E",
+    "light": "#14B8A6",
+    "dark": "#115E59"
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Overview",
+        "pages": ["index"]
+      },
+      {
+        "group": "Get started",
+        "pages": ["quickstart", "configuration"]
+      },
+      {
+        "group": "Operations",
+        "pages": ["operations", "output-format", "troubleshooting"]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/xdr-labs/stellar-alert-case-relay-docs"
+      }
+    ]
+  }
+}
