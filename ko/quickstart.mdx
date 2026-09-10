@@ -6,6 +6,51 @@ description: "Stellar Alert 전달, Case 전달 또는 두 스트림을 함께 �
 
 최소 하나의 스트림은 필수 설정이 모두 완료되어야 합니다. Alert와 Case 전달은 각각 독립적으로 활성화하거나 함께 실행할 수 있습니다.
 
+## Relay 스크립트 받기
+
+`Stellar_Alert_Case_Syslog.py`는 XDR Labs의 공개 GitHub 저장소에서 관리됩니다.
+
+**소스 저장소:** [xdr-labs/Stellar-Case-Alert-to-Sylog](https://github.com/xdr-labs/Stellar-Case-Alert-to-Sylog)
+
+실행 파일은 저장소 루트에 `Stellar_Alert_Case_Syslog.py`라는 이름으로 있습니다.
+
+### 방법 1: 저장소 전체 Clone
+
+스크립트와 함께 README 및 프로젝트 문서를 같이 받으려면 이 방법을 권장합니다.
+
+```bash
+git clone https://github.com/xdr-labs/Stellar-Case-Alert-to-Sylog.git
+cd Stellar-Case-Alert-to-Sylog
+ls -l Stellar_Alert_Case_Syslog.py
+```
+
+### 방법 2: Python 스크립트만 다운로드
+
+Relay 스크립트만 필요한 경우 현재 `main` 버전을 직접 다운로드할 수 있습니다.
+
+```bash
+curl -fL \
+  -o Stellar_Alert_Case_Syslog.py \
+  https://raw.githubusercontent.com/xdr-labs/Stellar-Case-Alert-to-Sylog/main/Stellar_Alert_Case_Syslog.py
+```
+
+`wget`을 사용하는 경우:
+
+```bash
+wget -O Stellar_Alert_Case_Syslog.py \
+  https://raw.githubusercontent.com/xdr-labs/Stellar-Case-Alert-to-Sylog/main/Stellar_Alert_Case_Syslog.py
+```
+
+다운로드 후 파일이 정상적으로 존재하는지 확인합니다.
+
+```bash
+ls -lh Stellar_Alert_Case_Syslog.py
+```
+
+<Note>
+  실제 런타임 스크립트의 Source of Truth는 위 GitHub 저장소입니다. 운영 환경을 준비할 때는 기존 서버나 오래된 문서에서 스크립트를 복사하기보다 저장소의 버전을 사용하는 것을 권장합니다.
+</Note>
+
 ## 시작하기 전에
 
 Relay 호스트에 다음이 준비되어 있는지 확인합니다.
@@ -14,7 +59,7 @@ Relay 호스트에 다음이 준비되어 있는지 확인합니다.
 - Stellar Cyber API에 대한 네트워크 접근
 - 각 대상 TCP listener에 대한 네트워크 접근
 - 런타임 스크립트에서 사용할 수 있는 유효한 Stellar Cyber API 접근 권한
-- `Stellar_Alert_Case_Syslog.py`
+- 위 소스 저장소에서 다운로드한 `Stellar_Alert_Case_Syslog.py`
 
 ## Alert만 전달
 

@@ -5,6 +5,51 @@ description: "Start Stellar alert forwarding, case forwarding, or both streams."
 
 At least one stream must be fully configured. Alert and case forwarding can be enabled independently or together.
 
+## Get the relay script
+
+`Stellar_Alert_Case_Syslog.py` is maintained in the public XDR Labs source repository:
+
+**Source repository:** [xdr-labs/Stellar-Case-Alert-to-Sylog](https://github.com/xdr-labs/Stellar-Case-Alert-to-Sylog)
+
+The script is stored at the repository root as `Stellar_Alert_Case_Syslog.py`.
+
+### Option 1: Clone the repository
+
+This is the recommended approach if you want the script together with the project README and supporting documentation.
+
+```bash
+git clone https://github.com/xdr-labs/Stellar-Case-Alert-to-Sylog.git
+cd Stellar-Case-Alert-to-Sylog
+ls -l Stellar_Alert_Case_Syslog.py
+```
+
+### Option 2: Download only the Python script
+
+If you only need the relay script, download the current `main` version directly:
+
+```bash
+curl -fL \
+  -o Stellar_Alert_Case_Syslog.py \
+  https://raw.githubusercontent.com/xdr-labs/Stellar-Case-Alert-to-Sylog/main/Stellar_Alert_Case_Syslog.py
+```
+
+Or with `wget`:
+
+```bash
+wget -O Stellar_Alert_Case_Syslog.py \
+  https://raw.githubusercontent.com/xdr-labs/Stellar-Case-Alert-to-Sylog/main/Stellar_Alert_Case_Syslog.py
+```
+
+After downloading, confirm that the file is present before continuing:
+
+```bash
+ls -lh Stellar_Alert_Case_Syslog.py
+```
+
+<Note>
+  The GitHub repository is the source of truth for the runtime script. If you are preparing a production deployment, use the version from that repository rather than copying the script from an old host or document.
+</Note>
+
 ## Before you start
 
 Make sure the relay host has:
@@ -13,7 +58,7 @@ Make sure the relay host has:
 - Network access to the Stellar Cyber API
 - Network access to each destination TCP listener
 - Valid Stellar Cyber API access for the runtime script
-- `Stellar_Alert_Case_Syslog.py`
+- `Stellar_Alert_Case_Syslog.py` downloaded from the source repository above
 
 ## Alert only
 
