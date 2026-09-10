@@ -1,0 +1,78 @@
+---
+title: "설정"
+sidebarTitle: "설정"
+description: "Alert와 Case 스트림, 전송 대상 및 Case 옵션을 설정합니다."
+---
+
+Relay는 Alert 전달과 Case 전달을 서로 독립적으로 설정되는 두 개의 스트림으로 처리합니다. 각 스트림은 자체 interval과 전송 대상을 가집니다.
+
+## Alert 스트림
+
+| 옵션 | 용도 | 예제 |
+| --- | --- | --- |
+| `--alert-interval` | Alert fetch interval | `60` |
+| `--alert-syslog-ip` | Alert 대상 IP 주소 | `10.10.10.20` |
+| `--alert-syslog-port` | Alert 대상 TCP port | `5201` |
+
+유효한 Alert 스트림을 구성하려면 세 옵션이 모두 필요합니다.
+
+```bash
+--alert-interval 60 \
+--alert-syslog-ip 10.10.10.20 \
+--alert-syslog-port 5201
+```
+
+## Case 스트림
+
+| 옵션 | 용도 | 예제 |
+| --- | --- | --- |
+| `--case-interval` | Case fetch interval | `3600` |
+| `--case-syslog-ip` | Case 대상 IP 주소 | `10.10.10.20` |
+| `--case-syslog-port` | Case 대상 TCP port | `5142` |
+| `--case-include-summary` | Case summary 데이터 포함 | enabled |
+| `--no-case-format-summary` | 추가 Case summary formatting 비활성화 | enabled |
+| `--case-fetch-timeout` | Case fetch timeout | `90` |
+
+유효한 Case 스트림을 구성하려면 interval, 대상 IP, 대상 port가 필요합니다.
+
+```bash
+--case-interval 3600 \
+--case-syslog-ip 10.10.10.20 \
+--case-syslog-port 5142 \
+--case-include-summary \
+--no-case-format-summary \
+--case-fetch-timeout 90
+```
+
+## 스트림 상태 규칙
+
+<Steps>
+  <Step title="스트림 옵션을 모두 생략한 경우">
+    특정 스트림의 모든 옵션을 생략하면 해당 스트림은 비활성화됩니다.
+  </Step>
+  <Step title="부분 설정">
+    스트림 설정을 시작했지만 필수 옵션이 빠져 있으면 해당 스트림은 오류로 처리됩니다.
+  </Step>
+  <Step title="완전한 설정">
+    모든 필수 옵션이 존재하면 스트림을 실행할 수 있습니다. 하나의 프로세스에서 Alert와 Case 스트림을 모두 활성화할 수 있습니다.
+  </Step>
+</Steps>
+
+## 서로 다른 전송 대상 사용
+
+Alert와 Case 스트림에는 각각 별도의 IP와 port 옵션이 있으므로 서로 다른 listener로 전송할 수 있습니다.
+
+```text
+Alerts -> 10.10.10.20:5201
+Cases  -> 10.10.10.30:5142
+```
+
+하나의 listener가 두 레코드 유형을 모두 처리한다면 동일한 SIEM/SOC 수신기를 사용할 수도 있습니다.
+
+## Debug 모드
+
+`--debug`는 문제 해결 시에만 사용하십시오.
+
+<Info>
+  대상 옵션 이름에는 `syslog`가 포함되어 있지만, 문서에 정의된 payload 형식은 TCP 기반 newline-delimited JSON(NDJSON)입니다. 수신 측 parser를 이에 맞게 설정하십시오.
+</Info>

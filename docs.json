@@ -9,18 +9,59 @@
     "dark": "#115E59"
   },
   "navigation": {
-    "groups": [
+    "languages": [
       {
-        "group": "Overview",
-        "pages": ["index"]
+        "language": "en",
+        "default": true,
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "index"
+            ]
+          },
+          {
+            "group": "Get started",
+            "pages": [
+              "quickstart",
+              "configuration"
+            ]
+          },
+          {
+            "group": "Operations",
+            "pages": [
+              "operations",
+              "output-format",
+              "troubleshooting"
+            ]
+          }
+        ]
       },
       {
-        "group": "Get started",
-        "pages": ["quickstart", "configuration"]
-      },
-      {
-        "group": "Operations",
-        "pages": ["operations", "output-format", "troubleshooting"]
+        "language": "ko",
+        "groups": [
+          {
+            "group": "개요",
+            "pages": [
+              "ko/index"
+            ]
+          },
+          {
+            "group": "시작하기",
+            "pages": [
+              "ko/quickstart",
+              "ko/configuration"
+            ]
+          },
+          {
+            "group": "운영",
+            "pages": [
+              "ko/operations",
+              "ko/output-format",
+              "ko/troubleshooting"
+            ]
+          }
+        ]
       }
     ]
   },

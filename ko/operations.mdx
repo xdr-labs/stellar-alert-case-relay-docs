@@ -1,0 +1,116 @@
+---
+title: "systemd로 지속 실행"
+sidebarTitle: "systemd로 지속 실행"
+description: "부팅 시 Relay를 자동 시작하고 장애 시 복구하며 서비스 로그를 확인합니다."
+---
+
+Relay를 `systemd` 서비스로 실행하면 호스트 부팅 시 자동으로 시작되고 프로세스 장애 발생 시 자동으로 복구할 수 있습니다.
+
+## 서비스 unit 생성
+
+다음 파일을 생성합니다.
+
+```text
+/etc/systemd/system/stellar-alert-case.service
+```
+
+예제:
+
+```ini
+[Unit]
+Description=Stellar Cyber Alert + Case Syslog daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=aella
+Group=aella
+WorkingDirectory=/home/aella/kt
+ExecStart=/usr/bin/python3 /home/aella/kt/Stellar_Alert_Case_Syslog.py \
+  --alert-interval 60 \
+  --case-interval 3600 \
+  --alert-syslog-ip 10.10.10.20 \
+  --alert-syslog-port 5201 \
+  --case-syslog-ip 10.10.10.20 \
+  --case-syslog-port 5142 \
+  --case-include-summary \
+  --no-case-format-summary \
+  --case-fetch-timeout 90
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+<Warning>
+  예제의 user, group, working directory, script path, 대상 주소 및 port는 실제 환경에 맞게 변경하십시오.
+</Warning>
+
+## 활성화 및 시작
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now stellar-alert-case.service
+sudo systemctl status stellar-alert-case.service
+```
+
+Unit 파일을 변경한 뒤에는 다음을 실행합니다.
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart stellar-alert-case.service
+```
+
+## 서비스 로그 확인
+
+실시간으로 로그를 확인하려면:
+
+```bash
+journalctl -u stellar-alert-case.service -f
+```
+
+실제로 적용되는 unit 파일을 확인하려면:
+
+```bash
+systemctl cat stellar-alert-case.service
+```
+
+## 자동 복구
+
+권장 서비스 설정은 다음과 같습니다.
+
+```ini
+Restart=on-failure
+RestartSec=10
+```
+
+이 설정을 사용하면 프로세스 장애 후 `systemd`가 데몬을 자동으로 재시작하면서 지나치게 빠른 반복 재시작을 방지할 수 있습니다.
+
+## 운영 기능
+
+Relay는 지속적인 운영을 위해 다음 기능을 제공합니다.
+
+- Fetch checkpointing
+- Send retry/recovery
+- Backfill
+- Alert와 Case의 독립적인 전송 대상
+
+## 운영 팁
+
+- 자동 프로세스 복구를 위해 `Restart=on-failure`를 유지하십시오.
+- `--debug`는 문제 해결 시에만 사용하십시오.
+- Relay 호스트에서 설정된 모든 대상까지 TCP 연결이 가능한지 확인하십시오.
+- 하위 워크플로우가 서로 다르면 Alert와 Case에 별도의 listener를 사용하십시오.
+- Unit 파일을 수정한 뒤에는 서비스를 재시작하기 전에 항상 `systemctl daemon-reload`를 실행하십시오.
+
+<CardGroup cols={2}>
+  <Card title="설정" icon="gear" href="/ko/configuration">
+    스트림 필수 설정과 사용 가능한 옵션을 확인합니다.
+  </Card>
+
+  <Card title="문제 해결" icon="wrench" href="/ko/troubleshooting">
+    설정 및 데이터 전달 문제를 진단합니다.
+  </Card>
+</CardGroup>

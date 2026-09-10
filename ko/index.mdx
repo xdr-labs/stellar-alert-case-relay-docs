@@ -1,0 +1,79 @@
+---
+title: "Stellar Alert & Case Relay"
+sidebarTitle: "Stellar Alert & Case Relay"
+description: "Stellar Cyber의 Alert와 Case를 기존 SIEM 및 SOC 워크플로우로 전달합니다."
+---
+
+Stellar Alert & Case Relay는 이미 SIEM 또는 SOC 포털을 운영하고 있으며 Stellar Cyber 탐지 결과를 기존 워크플로우로 직접 전달하려는 조직을 위한 경량 Python 데몬입니다.
+
+<Info>
+  런타임 스크립트와 CLI에는 기존 **Syslog** 명칭이 유지되어 있지만, 문서에 정의된 실제 전송 형식은 **TCP 기반 newline-delimited JSON (NDJSON)** 입니다.
+</Info>
+
+## 개발 목적
+
+온프레미스 SOC 팀은 이미 SIEM 대시보드, 모니터링 포털, 운영 프로세스를 구축해 사용하는 경우가 많습니다. 이 환경에서도 수동 export나 일회성 연동 없이 Stellar Cyber NDR/XDR의 Alert와 Case를 기존 시스템 안에서 사용할 수 있어야 합니다.
+
+```text
+Stellar Cyber API
+       |
+       v
+Python Relay Daemon
+       |
+       v
+Customer SIEM / SOC Portal
+```
+
+## 주요 기능
+
+<CardGroup cols={2}>
+  <Card title="Alert 및 Case 전달" icon="arrow-right-arrow-left">
+    Stellar Cyber API에서 Alert와 Case를 가져와 하위 SOC 시스템으로 전달합니다.
+  </Card>
+
+  <Card title="유연한 스트림 모드" icon="sliders">
+    동일한 데몬에서 Alert 전용, Case 전용 또는 두 스트림을 함께 실행할 수 있습니다.
+  </Card>
+
+  <Card title="실제 운영 환경을 위한 기능" icon="rotate">
+    지속적인 운영을 위해 fetch checkpoint, 전송 retry/recovery, backfill을 지원합니다.
+  </Card>
+
+  <Card title="독립적인 전송 대상" icon="route">
+    Alert와 Case 스트림에 서로 다른 대상 IP 주소와 포트를 지정할 수 있습니다.
+  </Card>
+</CardGroup>
+
+## 한눈에 보기
+
+| 항목 | 동작 |
+| --- | --- |
+| Source | Stellar Cyber API |
+| Runtime | Python daemon |
+| Transport | TCP |
+| Payload framing | NDJSON, 한 줄에 JSON 객체 하나 |
+| Stream modes | Alert-only, Case-only 또는 둘 다 |
+| Destinations | Alert와 Case 각각 독립적인 IP/port 설정 |
+| Operations | Checkpoint, retry/recovery, backfill, systemd |
+
+## 일반적인 배포 방식
+
+Relay는 Stellar Cyber와 대상 SIEM/SOC 수신기 모두에 네트워크로 접근할 수 있는 Linux 호스트에서 실행합니다. 장기간 운영할 경우 `systemd`로 실행하여 부팅 시 자동 시작되고 프로세스 장애 시 자동 복구되도록 구성하는 것을 권장합니다.
+
+<CardGroup cols={2}>
+  <Card title="빠른 시작" icon="rocket" href="/ko/quickstart">
+    Alert 스트림, Case 스트림 또는 두 스트림을 함께 시작합니다.
+  </Card>
+
+  <Card title="설정" icon="gear" href="/ko/configuration">
+    스트림 주기, 전송 대상 및 Case 옵션을 설정합니다.
+  </Card>
+
+  <Card title="systemd로 실행" icon="server" href="/ko/operations">
+    Relay를 지속적으로 실행하고 서비스 로그를 확인합니다.
+  </Card>
+
+  <Card title="출력 형식" icon="code" href="/ko/output-format">
+    TCP NDJSON을 수신하도록 대상 시스템을 준비합니다.
+  </Card>
+</CardGroup>

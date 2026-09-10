@@ -1,0 +1,78 @@
+---
+title: "출력 형식"
+sidebarTitle: "출력 형식"
+description: "TCP/NDJSON 전송 형식과 수신 시스템 요구사항을 설명합니다."
+---
+
+Relay는 **TCP 기반 newline-delimited JSON(NDJSON)** 형식으로 데이터를 전송합니다.
+
+## 전송 방식과 framing
+
+각 레코드는 하나의 JSON 객체 뒤에 newline이 붙는 형태입니다.
+
+```text
+{"...":"..."}\n
+{"...":"..."}\n
+{"...":"..."}\n
+```
+
+수신 시스템은 JSON array나 하나의 큰 문서를 기다리는 방식이 아니라 각 newline을 하나의 레코드 경계로 처리해야 합니다.
+
+## Alert 및 Case 레코드
+
+Alert와 Case 이벤트는 JSON 레코드로 전송됩니다. 수신 측 워크플로우는 출력되는 JSON의 필드를 이용해 Alert와 Case 레코드를 구분할 수 있습니다.
+
+운영용 SIEM parser를 만들기 전에 실제 배포 버전에서 대표적인 Alert와 Case 이벤트를 수집하고, routing 및 field mapping에 사용할 필드를 검증하십시오.
+
+## 독립적인 전송 경로
+
+Alert와 Case 스트림에는 각각 독립적인 대상 설정이 있습니다.
+
+```text
+Alert destination: --alert-syslog-ip + --alert-syslog-port
+Case destination:  --case-syslog-ip  + --case-syslog-port
+```
+
+따라서 다음과 같이 별도의 ingestion path를 구성할 수 있습니다.
+
+```text
+Stellar Cyber API
+       |
+       v
+Relay daemon
+   |        |
+   |        +--> Case listener
+   +-----------> Alert listener
+```
+
+두 스트림을 동일한 하위 시스템으로 보낼 수도 있습니다.
+
+## `syslog` 옵션 이름에 대하여
+
+런타임 CLI에는 `--alert-syslog-ip`, `--case-syslog-port`와 같은 기존 옵션 이름이 유지되어 있습니다. 그러나 문서에 정의된 실제 payload 형식은 **TCP 기반 NDJSON이며 한 줄에 JSON 객체 하나**입니다.
+
+<Info>
+  수신 시스템은 TCP 기반 line-delimited JSON을 처리하도록 설정하십시오. CLI 옵션 이름에 `syslog`가 포함되어 있다는 이유만으로 RFC 3164 또는 RFC 5424 framing을 사용한다고 가정하면 안 됩니다.
+</Info>
+
+## 수신 시스템 체크리스트
+
+운영 환경에 적용하기 전에 다음을 확인하십시오.
+
+- 수신 시스템이 설정된 TCP port에서 listening 중인지 확인합니다.
+- 네트워크 정책이 Relay 호스트의 연결을 허용하는지 확인합니다.
+- Newline을 레코드 경계로 처리하는지 확인합니다.
+- 각 line이 하나의 JSON 객체로 parsing되는지 확인합니다.
+- 실제 sample 레코드를 이용해 Alert와 Case routing을 테스트합니다.
+- 실제 출력 데이터를 기준으로 SIEM의 timestamp, source type, field mapping을 검증합니다.
+
+## Case summary 출력
+
+Case 예제에서는 다음 옵션을 사용합니다.
+
+```bash
+--case-include-summary \
+--no-case-format-summary
+```
+
+이 옵션들은 대상 워크플로우에서 Case summary가 필요하고 추가 formatting 없이 summary를 유지해야 할 때 유용합니다.
