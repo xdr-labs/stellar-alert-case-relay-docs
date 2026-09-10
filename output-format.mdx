@@ -1,0 +1,81 @@
+---
+title: "Output format"
+description: "Understand the documented TCP/NDJSON delivery format and receiver expectations."
+---
+
+The operational guide describes the relay output as **newline-delimited JSON (NDJSON) over TCP**.
+
+## Transport and framing
+
+Each record is sent as one JSON object followed by a newline:
+
+```text
+{"...":"..."}\n
+{"...":"..."}\n
+{"...":"..."}\n
+```
+
+A downstream receiver should therefore treat the TCP stream as line-delimited JSON rather than waiting for a single large JSON array or document.
+
+## Alert and case records
+
+The guide states that alert and case messages can be distinguished using fields inside each JSON object.
+
+<Warning>
+The available source material does not provide the exact emitted field names, a JSON schema, sample payloads, or a versioning contract. Do not build a production field mapping from guessed names. Capture representative output or inspect the runtime source first.
+</Warning>
+
+## Separate delivery paths
+
+Alert and case streams have their own destination IP and port options:
+
+```text
+Alert destination: --alert-syslog-ip + --alert-syslog-port
+Case destination:  --case-syslog-ip  + --case-syslog-port
+```
+
+This allows deployments such as:
+
+```text
+Stellar Cyber API
+       |
+       v
+Relay daemon
+   |        |
+   |        +--> Case listener
+   +-----------> Alert listener
+```
+
+They may also point to the same downstream system when one receiver handles both record types.
+
+## Why the CLI says `syslog`
+
+The current command-line option names use `syslog`, for example `--alert-syslog-ip` and `--case-syslog-port`. However, the guide's output section explicitly says that the script sends **NDJSON over TCP, one JSON object per line**.
+
+<Info>
+Based on the documentation available today, configure the receiver for line-delimited JSON over TCP. Do not assume RFC 3164 or RFC 5424 message framing solely from the `syslog` option names.
+</Info>
+
+## Receiver checklist
+
+Before production use, verify all of the following with a real sample event:
+
+- The receiver accepts a raw TCP connection on the configured port.
+- The receiver treats a newline as the record boundary.
+- Each line parses as one JSON object.
+- The field used to distinguish alert and case records is confirmed from actual output.
+- Any SIEM-side timestamp, source-type, or parser mapping is validated against the emitted payload rather than inferred from this guide.
+
+## Schema status
+
+The current guide documents the transport and framing but not the full event schema. A future schema reference should be generated from the runtime implementation or representative captured messages and should include:
+
+- Alert record fields
+- Case record fields
+- Type discriminator field(s)
+- Timestamp representation
+- Optional case summary fields
+- Null/omitted field behavior
+- Schema compatibility/versioning expectations
+
+Until those are source-verified, this documentation intentionally leaves them unspecified.
