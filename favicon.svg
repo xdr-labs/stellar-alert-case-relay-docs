@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Stellar Relay">
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="#0F766E"/>
+  <path d="M15 22h17l-5-5 4-4 12 12-12 12-4-4 5-5H15z" fill="#fff"/>
+  <path d="M49 42H32l5 5-4 4-12-12 12-12 4 4-5 5h17z" fill="#99F6E4" opacity=".95"/>
+</svg>
