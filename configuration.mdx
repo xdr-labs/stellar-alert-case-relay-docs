@@ -1,0 +1,81 @@
+---
+title: "Configuration"
+description: "Documented command-line options and stream configuration rules."
+---
+
+The relay treats alert and case forwarding as two independently configured streams. Each stream has a minimum set of required options.
+
+## Alert stream
+
+| Option | Purpose documented by the guide | Example |
+| --- | --- | --- |
+| `--alert-interval` | Alert stream interval | `60` |
+| `--alert-syslog-ip` | Alert destination IP address | `10.10.10.20` |
+| `--alert-syslog-port` | Alert destination TCP port | `5201` |
+
+A valid alert stream requires all three options.
+
+```bash
+--alert-interval 60 \
+--alert-syslog-ip 10.10.10.20 \
+--alert-syslog-port 5201
+```
+
+## Case stream
+
+| Option | Purpose documented or directly implied by the guide | Example |
+| --- | --- | --- |
+| `--case-interval` | Case stream interval | `3600` |
+| `--case-syslog-ip` | Case destination IP address | `10.10.10.20` |
+| `--case-syslog-port` | Case destination TCP port | `5142` |
+| `--case-include-summary` | Include the case summary in the case workflow | enabled |
+| `--no-case-format-summary` | Recommended in the guide's case example; exact formatting semantics require source verification | enabled |
+| `--case-fetch-timeout` | Case fetch timeout setting | `90` |
+
+A valid case stream requires the interval, destination IP, and destination port. The remaining options above are shown in the guide's recommended case configuration.
+
+```bash
+--case-interval 3600 \
+--case-syslog-ip 10.10.10.20 \
+--case-syslog-port 5142 \
+--case-include-summary \
+--no-case-format-summary \
+--case-fetch-timeout 90
+```
+
+## Stream state rules
+
+The guide defines the following behavior:
+
+<Steps>
+  <Step title="No options for a stream">
+    If all options belonging to a stream are omitted, that stream is disabled.
+  </Step>
+  <Step title="Some required options are present">
+    If configuration for a stream is started but a required option is missing, that stream is an error.
+  </Step>
+  <Step title="All required options are present">
+    The stream is configured and can run. Alert and case streams can both be active in the same process.
+  </Step>
+</Steps>
+
+## Separate destinations
+
+Because alert and case streams have separate IP and port options, they can be delivered to different downstream listeners.
+
+For example:
+
+```text
+Alerts -> 10.10.10.20:5201
+Cases  -> 10.10.10.30:5142
+```
+
+The destination names in the CLI use `syslog`, but the product guide explicitly describes the transmitted payload as **NDJSON over TCP**. See [Output format](/output-format) before configuring a receiver.
+
+## Debug mode
+
+The operations guide references `--debug` and recommends using it only while troubleshooting.
+
+<Warning>
+The available guide does not document the full option parser, default values, units for every numeric option, configuration files, environment variables, or API authentication parameters. These details should be added only after they are verified against `Stellar_Alert_Case_Syslog.py`.
+</Warning>
