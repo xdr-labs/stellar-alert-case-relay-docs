@@ -1,43 +1,35 @@
 ---
-title: "Output format"
-description: "TCP/NDJSON framing and receiver requirements."
+title: "Output Format"
+description: "Receiver requirements for Stellar Relay NDJSON over TCP."
 ---
 
-The relay sends **newline-delimited JSON (NDJSON) over TCP**.
+# Output Format
 
-<Info>
-The CLI uses historical option names such as `--alert-syslog-ip`, but the payload is not RFC 3164/5424 syslog.
-</Info>
+Stellar Relay sends **NDJSON over a raw TCP connection**.
 
-## Framing
+Each record is:
 
-Each line is one JSON object:
+- one UTF-8 JSON object
+- terminated by LF (`\n`)
+- sent as one logical line
 
-```text
-{"...":"..."}\n
-{"...":"..."}\n
-```
-
-The receiver must treat each newline as a record boundary.
-
-## Destinations
-
-Alert and Case streams use independent destination settings:
+Example framing:
 
 ```text
-Alert: --alert-syslog-ip + --alert-syslog-port
-Case:  --case-syslog-ip  + --case-syslog-port
+{"stellar_record_type":"alert",...}\n
+{"stellar_record_type":"case",...}\n
 ```
 
-They may point to separate listeners or the same downstream system.
+The receiver must preserve line boundaries and parse each line as an independent JSON object.
+
+> The historical CLI names `--alert-syslog-*` and `--case-syslog-*` do not mean the payload is RFC 5424 syslog.
+
+Alert and Case can use separate destinations or the same destination. When sharing a destination, distinguish record types using JSON fields such as `stellar_record_type`.
 
 ## Receiver checklist
 
-Before production use, verify that:
-
-- The TCP listener is reachable from the relay host.
-- Each line is parsed as one JSON object.
-- Alert and Case samples are routed correctly.
-- SIEM timestamp, source type, and field mappings match actual relay output.
-
-Capture representative events from your deployed version before finalizing the production parser.
+- TCP listener is reachable from the relay host
+- listener accepts newline-delimited UTF-8 data
+- parser treats each line as JSON
+- firewall allows the configured destination port
+- receiver capacity is sufficient for retry/backfill bursts
