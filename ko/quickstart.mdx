@@ -21,7 +21,7 @@ curl -fL \
 - Python 3
 - Stellar Cyber API로의 네트워크 연결
 - 대상 TCP listener로의 네트워크 연결
-- Stellar Cyber User ID와 All-Access API token
+- 이메일 형식의 Stellar Cyber User ID와 All-Access API token
 - 최종 운영 전환 시 Linux + systemd
 
 아래 예제의 수신기 IP와 port는 실제 환경의 값으로 변경하십시오.
@@ -41,7 +41,7 @@ export STELLAR_TOKEN='YOUR_ALL_ACCESS_TOKEN'
 ```bash
 python3 Stellar_Alert_Case_Syslog.py \
   --host YOUR_STELLAR_HOST \
-  --userid YOUR_USER_ID \
+  --userid YOUR_USER_EMAIL \
   --alert-interval 60 \
   --alert-syslog-ip 10.10.10.20 \
   --alert-syslog-port 5201 \
@@ -57,7 +57,7 @@ python3 Stellar_Alert_Case_Syslog.py \
 
 몇 번의 fetch cycle 동안 정상 동작하는 것을 확인한 뒤 **Ctrl+C**로 종료합니다.
 
-테스트에서는 `--initial-lookback-hours 0`을 사용해 checkpoint가 없을 때 최근 1분만 조회합니다. 처음부터 많은 과거 데이터를 전송하는 것을 피할 수 있습니다.
+테스트에서는 `--initial-lookback-hours 0`을 사용해 최초 조회 범위를 1분으로 제한합니다. Alert는 stability cutoff를 기준으로 1분 window를 조회하고, Case는 현재 시간을 기준으로 1분을 조회하므로 처음부터 많은 과거 데이터를 전송하는 것을 피할 수 있습니다.
 
 <Note>
 운영에서도 Alert만 사용할 예정이라면 이 테스트가 성공한 뒤 Alert+Case 동시 테스트는 건너뛰고 최종 운영 설정으로 넘어가도 됩니다.
@@ -70,7 +70,7 @@ python3 Stellar_Alert_Case_Syslog.py \
 ```bash
 python3 Stellar_Alert_Case_Syslog.py \
   --host YOUR_STELLAR_HOST \
-  --userid YOUR_USER_ID \
+  --userid YOUR_USER_EMAIL \
   --alert-interval 60 \
   --alert-syslog-ip 10.10.10.20 \
   --alert-syslog-port 5201 \
