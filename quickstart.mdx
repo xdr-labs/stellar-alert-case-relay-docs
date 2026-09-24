@@ -1,106 +1,78 @@
 ---
 title: "Quickstart"
-description: "Configure the relay interactively or run alert/case forwarding manually."
+description: "Download, configure, and start Stellar Alert & Case Relay."
 ---
 
-The recommended way to configure a new relay is the interactive setup wizard. The original command-line mode remains available for automation and manual foreground runs.
+The recommended setup method is the interactive wizard. Manual CLI operation remains available.
 
-## Verify the script version
-
-This guide requires the wizard-enabled build.
+## 1. Download
 
 ```bash
-python3 Stellar_Alert_Case_Syslog.py --help | grep -- --setup
+curl -fL \
+  -o Stellar_Alert_Case_Syslog.py \
+  https://raw.githubusercontent.com/xdr-labs/Stellar-Case-Alert-to-Sylog/main/Stellar_Alert_Case_Syslog.py
 ```
 
-Expected output includes `--setup`. If it does not, update the runtime script before using the wizard instructions below.
-
-## Requirements
-
-The relay host needs:
+Requirements:
 
 - Python 3
 - Network access to the Stellar Cyber API
-- Network access to each destination TCP listener
-- A valid Stellar Cyber user ID and All-Access API token
-- Linux with systemd if you want automatic service installation
+- Network access to the destination TCP listener
+- Stellar Cyber User ID and All-Access API token
+- Linux with systemd for automatic service installation
 
-## Recommended: interactive setup
-
-Run the script with no arguments:
+## 2. Run the setup wizard
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py
 ```
 
-or explicitly start the wizard:
+You can also run:
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py --setup
 ```
 
-The wizard asks for:
+The wizard asks for the Stellar Cyber host, User ID, API token, enabled streams, forwarding intervals, destination IP/ports, and initial lookback.
 
-1. Stellar Cyber host
-2. User ID
-3. All-Access API token
-4. Whether Alert forwarding is enabled
-5. Whether Case forwarding is enabled
-6. Interval, destination IP, and destination TCP port for each enabled stream
-7. Initial lookback in hours
-8. Whether to run continuously with systemd
-
-At least one of Alert or Case must be enabled.
-
-### Wizard defaults
-
-| Item | Default |
+| Default | Value |
 | --- | ---: |
-| Alert enabled | Yes |
-| Case enabled | No |
+| Alert | Enabled |
+| Case | Disabled |
 | Alert interval | 60 seconds |
 | Case interval | 300 seconds |
 | Alert port | 5201 |
 | Case port | 5202 |
 | Initial lookback | 48 hours |
 
-Enter `0` for the initial lookback to use only the last 1 minute when no checkpoint exists.
+At least one stream must be enabled. Initial lookback `0` means the last 1 minute when no checkpoint exists.
 
-## Automatic systemd installation
+## 3. Choose how to run
 
-At the end of the wizard, answer **Yes** to:
+At the end of setup:
 
 ```text
 Run continuously with systemd (auto-start on boot)?
 ```
 
-The script may ask for your sudo password. It then:
+Choose **Yes** for normal continuous operation. The script installs, enables, and starts `stellar-alert-case-syslog.service`, then shows its status and recent logs.
 
-- Copies the relay to `/usr/local/lib/stellar-alert-case/Stellar_Alert_Case_Syslog.py`
-- Stores `STELLAR_TOKEN` in `/etc/default/stellar-alert-case-syslog` with mode `0600`
-- Creates `/etc/systemd/system/stellar-alert-case-syslog.service`
-- Runs `systemctl daemon-reload`
-- Enables the service for boot
-- Starts/restarts the service immediately
-- Prints `systemctl status`
-- Prints the most recent journal entries
-- Verifies that the service is both active and enabled
+Choose **No** to see the equivalent manual command and optionally run in the foreground.
 
-<Note>
-The API token is not placed in the systemd `ExecStart` command. The service reads it from the protected environment file.
-</Note>
+## 4. Verify the service
 
-If you answer **No** to systemd installation, the wizard prints the equivalent manual command and asks whether to run it immediately in the foreground.
+```bash
+sudo systemctl status stellar-alert-case-syslog
+sudo journalctl -u stellar-alert-case-syslog -n 20 --no-pager
+```
 
-## Manual CLI mode
+## Manual CLI examples
 
-For manual operation, prefer the `STELLAR_TOKEN` environment variable so the token does not appear in the command line:
+For manual runs, use `STELLAR_TOKEN` so the API token is not placed directly in the command line:
 
 ```bash
 export STELLAR_TOKEN='YOUR_ALL_ACCESS_TOKEN'
 ```
-
-You can also pass `--token`, but that may expose the value through shell history or process listings.
 
 ### Alert only
 
@@ -120,7 +92,7 @@ python3 Stellar_Alert_Case_Syslog.py \
   --case-syslog-port 5202
 ```
 
-### Alert and Case together
+### Alert and Case
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py \
@@ -132,38 +104,11 @@ python3 Stellar_Alert_Case_Syslog.py \
   --case-syslog-port 5202
 ```
 
-Alert and Case may use the same receiver or different destinations.
-
-## Stream validation
-
-| Stream | Required settings |
-| --- | --- |
-| Alert | `--alert-interval`, `--alert-syslog-ip`, `--alert-syslog-port` |
-| Case | `--case-interval`, `--case-syslog-ip`, `--case-syslog-port` |
-
-The relay rejects:
-
-- Partially configured streams
-- Intervals less than 1 second
-- Invalid IPv4/IPv6 destination addresses
-- Ports outside `1-65535`
-- A configuration with neither stream enabled
-
-## What the receiver gets
-
-The relay sends one JSON object per line over TCP:
-
-```text
-{one JSON object}\n
-{next JSON object}\n
-...
-```
-
 <CardGroup cols={2}>
-  <Card title="Configuration reference" icon="gear" href="/configuration">
-    Review all CLI and runtime options.
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Full option reference.
   </Card>
   <Card title="systemd operations" icon="server" href="/operations">
-    Manage the automatically installed service.
+    Service management commands.
   </Card>
 </CardGroup>
