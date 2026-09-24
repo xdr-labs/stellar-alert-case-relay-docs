@@ -1,156 +1,89 @@
 ---
 title: "문제 해결"
 sidebarTitle: "문제 해결"
-description: "Wizard 버전, 인증, 스트림 설정, systemd, API 및 TCP 전달 문제를 확인합니다."
+description: "인증, 서비스 및 TCP 전달 문제를 확인합니다."
 ---
 
-## `--setup`을 인식하지 못함
+## API token 오류
 
-Wizard 버전인지 확인합니다.
+Wizard에서는 유효한 All-Access API token을 입력합니다.
 
-```bash
-python3 Stellar_Alert_Case_Syslog.py --help | grep -- --setup
-```
-
-아무 출력이 없다면 현재 설치된 스크립트는 이전 버전이며 이 문서의 대화형/systemd 자동 설치 기능을 지원하지 않습니다.
-
-## API token이 필요하다는 오류
-
-Wizard에서는 All-Access API token을 입력해야 합니다.
-
-수동 CLI에서는 다음 환경변수를 사용할 수 있습니다.
+수동 CLI에서는:
 
 ```bash
 export STELLAR_TOKEN='YOUR_ALL_ACCESS_TOKEN'
 ```
 
-또는 `--token`을 사용할 수 있습니다.
+## 스트림 설정 오류
 
-명령행 token은 shell history나 process list에 노출될 수 있으므로 수동 실행에서는 `STELLAR_TOKEN`을 권장합니다.
+활성화한 각 스트림에는 interval, destination IP, destination port가 모두 필요합니다.
 
-## 스트림이 시작되지 않음
+잘못된 IP, 1초 미만 interval, `1-65535` 범위를 벗어난 port, Alert/Case 모두 비활성화된 설정도 거부됩니다.
 
-활성화된 각 스트림에는 필수 옵션 세 가지가 모두 필요합니다.
-
-### Alert
-
-```text
---alert-interval
---alert-syslog-ip
---alert-syslog-port
-```
-
-### Case
-
-```text
---case-interval
---case-syslog-ip
---case-syslog-port
-```
-
-현재 버전은 시작 전에 다음도 검증합니다.
-
-- Interval은 1 이상
-- 유효한 IPv4/IPv6 destination
-- TCP port 1-65535
-- 최소 하나의 완전한 스트림
+전체 옵션은 [설정](/ko/configuration)을 참고하십시오.
 
 ## "Another instance is already running"
 
-Relay는 process lock을 사용합니다. 이 메시지는 같은 lock path를 사용하는 다른 프로세스가 이미 실행 중이라는 의미입니다.
-
-먼저 기존 서비스/프로세스를 확인합니다.
+기존 systemd 서비스 또는 foreground 프로세스를 확인합니다.
 
 ```bash
 sudo systemctl status stellar-alert-case-syslog
 ps -ef | grep '[S]tellar_Alert_Case_Syslog.py'
 ```
 
-기존 프로세스가 실행 중인 상태에서 lock 파일부터 삭제하지 마십시오.
+다른 Relay 프로세스가 실행 중일 때 lock 파일부터 삭제하지 마십시오.
 
 ## systemd 설치 실패
 
-Wizard는 `/usr/local/lib`, `/etc/default`, `/etc/systemd/system`에 파일을 만들기 위해 관리자 권한이 필요합니다.
-
-sudo 권한이 있는 계정으로 실행하고 요청될 경우 비밀번호를 입력합니다.
+Wizard는 sudo 권한이 필요합니다.
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py --setup
 ```
 
-## 서비스가 실행되지 않음
+필요한 경우 sudo 비밀번호를 입력합니다.
 
-정확한 서비스명은 `stellar-alert-case-syslog`입니다.
+## 서비스가 실행되지 않음
 
 ```bash
 sudo systemctl status stellar-alert-case-syslog
-systemctl is-active stellar-alert-case-syslog
-systemctl is-enabled stellar-alert-case-syslog
-```
-
-최근 로그:
-
-```bash
 sudo journalctl -u stellar-alert-case-syslog -n 50 --no-pager
 ```
 
-실시간 로그:
+## 서비스는 active인데 데이터가 오지 않음
+
+먼저 journal을 확인합니다.
 
 ```bash
 sudo journalctl -u stellar-alert-case-syslog -f
 ```
 
-## 서비스는 active인데 레코드가 오지 않음
+다음을 순서대로 확인하십시오.
 
-systemd의 active 상태는 프로세스 실행 여부만 의미합니다. Journal에서 Stellar API fetch와 TCP send 결과를 확인해야 합니다.
+1. Stellar Cyber host, User ID, API token
+2. Alert/Case interval과 destination
+3. 수신기까지 TCP 연결
+4. 수신기가 한 줄당 JSON 객체 하나를 처리하는지 여부
 
-다음을 순서대로 확인합니다.
+## 수신기가 내려감
 
-1. Stellar Cyber host와 User ID
-2. API token 유효성
-3. 활성화된 스트림의 interval/IP/port
-4. Relay 호스트에서 destination listener까지 TCP 연결
-5. 수신 시스템이 TCP 한 줄당 JSON 객체 하나를 처리하는지 여부
+미전송 데이터는 SQLite queue에 남아 재시도됩니다. 수신기 또는 네트워크를 복구한 뒤 journal에서 복구 상태를 확인하십시오.
 
-## TCP 수신기가 내려감
+## JSON parsing 문제
 
-Relay는 전송하지 못한 row를 SQLite queue에 보존하고 retry/recovery 상태로 전환합니다. 전송 실패 데이터를 sent로 처리하지 않습니다.
-
-수신기와 네트워크를 복구한 뒤 journal을 따라가며 재전송 상태를 확인하십시오.
-
-## 수신 시스템이 parsing하지 못함
-
-예상 framing:
+Relay는 TCP NDJSON을 전송합니다.
 
 ```text
 JSON object + newline
 JSON object + newline
-...
 ```
 
-전통적인 RFC syslog framing이 아니라 TCP NDJSON입니다.
+수신기는 RFC Syslog가 아니라 line-delimited JSON으로 구성해야 합니다.
 
-## Initial lookback
+## 추가 진단
 
-`--initial-lookback-hours`는 0 이상의 값이어야 합니다.
-
-- `48`: checkpoint가 없는 최초 실행에서 이전 48시간 조회
-- `0`: 최근 1분만 조회
-
-## Backfill
-
-`--backfill DAYS`는 1 이상의 값이어야 합니다. Backfill은 정상 checkpoint를 무시하고 지정 기간의 데이터를 다시 보낼 수 있습니다.
-
-## 이전 `--case-fetch-timeout` 예제
-
-이 문서의 Wizard 버전에는 `--case-fetch-timeout` 옵션이 없습니다.
-
-이전 명령이나 문서에 해당 옵션이 있다면 현재 버전에서는 제거하십시오.
-
-## Debug 모드
+상세 fetch/enqueue/send 로그가 필요할 때 수동 실행에 `--debug`를 추가합니다.
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py ... --debug
 ```
-
-Fetch/enqueue/send 상세 진단이 필요할 때 사용하고, 문제 해결 후에는 해제하십시오.
