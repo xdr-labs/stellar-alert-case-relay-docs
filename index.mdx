@@ -1,54 +1,52 @@
 ---
-title: "Stellar Alert & Case Relay"
-description: "Forward Stellar Cyber alerts and cases into existing SIEM and SOC workflows."
+title: "Stellar Relay"
+description: "Forward Stellar Cyber Alerts and Cases as durable NDJSON streams over TCP."
 ---
 
-Stellar Alert & Case Relay is a lightweight Python daemon that retrieves Stellar Cyber alerts and cases and forwards them to an existing SIEM or SOC system.
+# Stellar Relay
 
-<Info>
-The CLI keeps the historical **Syslog** option names, but the payload is **newline-delimited JSON (NDJSON) over TCP**.
-</Info>
+Stellar Relay is a lightweight Python daemon that polls **Stellar Cyber Alerts and Cases**, keeps durable local queue/checkpoint state, and forwards enabled streams as **NDJSON over TCP**.
 
-```text
-Stellar Cyber API
-       |
-       v
-Stellar Alert & Case Relay
-       |
-       v
-SIEM / SOC Receiver
+> Historical option names contain "syslog", but the wire format is newline-delimited JSON, not RFC 5424 syslog text.
+
+## How it works
+
+```mermaid
+flowchart LR
+    S["Stellar Cyber API"] --> P["Alert / Case Pollers"]
+    P --> Q["SQLite Queue + Checkpoints"]
+    Q --> T["TCP Sender"]
+    T --> C["Collector / Parser"]
 ```
 
-## Key features
+Alert and Case streams are independent. Run Alert only, Case only, or both.
 
-<CardGroup cols={2}>
-  <Card title="Alert and Case forwarding" icon="arrow-right-arrow-left">
-    Run Alert-only, Case-only, or both streams.
-  </Card>
-  <Card title="Independent destinations" icon="route">
-    Send Alert and Case data to separate IP addresses and ports.
-  </Card>
-  <Card title="Reliable delivery" icon="rotate">
-    Uses persistent queues, checkpoints, and retry/recovery.
-  </Card>
-  <Card title="Simple operation" icon="server">
-    Interactive setup can install and start the systemd service automatically.
-  </Card>
-</CardGroup>
-
-## Get started
+## Start here
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Download the script and configure the relay.
+    Run the interactive wizard and optionally install the systemd service.
   </Card>
-  <Card title="Configuration" icon="gear" href="/configuration">
-    Review CLI and runtime options.
+  <Card title="Configuration" icon="sliders" href="/configuration">
+    Review CLI options, defaults, and validation rules.
   </Card>
-  <Card title="systemd operations" icon="server" href="/operations">
-    Check status, logs, restart, and reconfigure.
+  <Card title="Operations" icon="gear" href="/operations">
+    Check service status, logs, restart, and reconfigure.
+  </Card>
+  <Card title="Output Format" icon="code" href="/output-format">
+    Configure receivers for NDJSON over TCP.
   </Card>
   <Card title="Troubleshooting" icon="wrench" href="/troubleshooting">
-    Diagnose API, service, and delivery problems.
+    Diagnose service, API, receiver, and state issues.
   </Card>
 </CardGroup>
+
+## Recommended first run
+
+```bash
+python3 Stellar_Alert_Case_Syslog.py
+```
+
+The wizard collects credentials and stream settings, then can install and start `stellar-alert-case-syslog.service` automatically.
+
+Manual CLI operation remains available for automation and testing.
