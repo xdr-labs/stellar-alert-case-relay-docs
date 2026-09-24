@@ -1,29 +1,71 @@
 ---
 title: "Run continuously with systemd"
-description: "Install, start, verify, and operate the relay as a systemd service."
+description: "Install and operate the relay as a systemd service."
 ---
 
-The wizard-enabled relay can create and manage its own systemd service. Manual unit creation is no longer the recommended installation path.
+## Install
 
-## Install from the wizard
-
-Run:
+Run the setup wizard:
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py --setup
 ```
 
-Complete the Alert/Case configuration and answer **Yes** when prompted:
+After configuration, answer **Yes** to:
 
 ```text
 Run continuously with systemd (auto-start on boot)?
 ```
 
-Administrator privileges are required. If the current shell is not root, the script runs sudo and may ask for your password.
+The wizard installs, enables, and starts `stellar-alert-case-syslog.service`. Sudo access is required.
 
-## Files installed
+## Common commands
 
-The wizard creates or updates:
+### Status
+
+```bash
+sudo systemctl status stellar-alert-case-syslog
+```
+
+### Follow logs
+
+```bash
+sudo journalctl -u stellar-alert-case-syslog -f
+```
+
+### Recent logs
+
+```bash
+sudo journalctl -u stellar-alert-case-syslog -n 50 --no-pager
+```
+
+### Restart
+
+```bash
+sudo systemctl restart stellar-alert-case-syslog
+```
+
+### Confirm boot startup
+
+```bash
+systemctl is-enabled stellar-alert-case-syslog
+```
+
+<Note>
+An active service confirms that the process is running. Check the journal to confirm Stellar API fetch and TCP delivery.
+</Note>
+
+## Reconfigure
+
+Run the wizard again and choose systemd installation:
+
+```bash
+python3 Stellar_Alert_Case_Syslog.py --setup
+```
+
+The installed configuration is replaced and the service is restarted.
+
+## Installed files
 
 ```text
 /usr/local/lib/stellar-alert-case/Stellar_Alert_Case_Syslog.py
@@ -31,116 +73,22 @@ The wizard creates or updates:
 /etc/systemd/system/stellar-alert-case-syslog.service
 ```
 
-The token environment file is written with mode `0600`.
+The API token is stored in the protected environment file, not in the systemd command line.
 
-The generated service uses the user who invoked the wizard, preserves that user's home directory for the default SQLite/log paths, and includes:
+<Warning>
+Do not copy the contents of `/etc/default/stellar-alert-case-syslog` into support tickets or shared logs.
+</Warning>
 
-```ini
-Restart=always
-RestartSec=5
-UMask=0077
-```
+## Persistent state
 
-The API token is loaded through:
-
-```ini
-EnvironmentFile=-/etc/default/stellar-alert-case-syslog
-```
-
-and is not included in `ExecStart`.
-
-## What installation does
-
-The installer runs the equivalent of:
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable stellar-alert-case-syslog
-sudo systemctl restart stellar-alert-case-syslog
-```
-
-It then displays:
-
-- Full service status
-- The most recent 20 journal entries
-- Active-state verification
-- Enabled-state verification
-
-A successful installation ends with a message that the service is both active and enabled.
-
-## Check status
-
-```bash
-sudo systemctl status stellar-alert-case-syslog
-```
-
-Check both runtime and boot state:
-
-```bash
-systemctl is-active stellar-alert-case-syslog
-systemctl is-enabled stellar-alert-case-syslog
-```
-
-## Follow logs
-
-```bash
-sudo journalctl -u stellar-alert-case-syslog -f
-```
-
-Recent logs only:
-
-```bash
-sudo journalctl -u stellar-alert-case-syslog -n 50 --no-pager
-```
-
-The journal should be reviewed after installation to confirm that API fetching and TCP delivery are actually succeeding; an active process alone does not prove end-to-end delivery.
-
-## Restart
-
-```bash
-sudo systemctl restart stellar-alert-case-syslog
-sudo systemctl status stellar-alert-case-syslog
-```
-
-## Reconfigure
-
-Run the wizard again:
-
-```bash
-python3 Stellar_Alert_Case_Syslog.py --setup
-```
-
-Choose the new values and answer **Yes** to systemd installation. The script replaces the installed script/configuration, reloads systemd, and restarts the service.
-
-## Inspect the installed configuration
-
-View the unit:
-
-```bash
-systemctl cat stellar-alert-case-syslog
-```
-
-Do not print the token file into shared logs or support tickets. It contains the API credential.
-
-## Runtime state
-
-Because the service runs as the invoking user and sets that user's `HOME`, the default persistent state remains under:
+By default, queue/checkpoint data and logs are stored under:
 
 ```text
 ~/.local/state/stellar_alert_case/
 ```
 
-This includes the SQLite queue/checkpoints, process lock, and relay logs.
+If a TCP receiver becomes unavailable, unsent data remains queued for retry.
 
-## Receiver outage behavior
-
-If a destination TCP listener becomes unreachable, queued unsent data is retained. The relay enters its retry/recovery path instead of marking those records as sent.
-
-<CardGroup cols={2}>
-  <Card title="Configuration" icon="gear" href="/configuration">
-    Review stream, state, and credential options.
-  </Card>
-  <Card title="Troubleshooting" icon="wrench" href="/troubleshooting">
-    Diagnose service, API, and delivery problems.
-  </Card>
-</CardGroup>
+<Card title="Troubleshooting" icon="wrench" href="/troubleshooting">
+  Diagnose service, API, and delivery problems.
+</Card>
