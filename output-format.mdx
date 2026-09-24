@@ -1,77 +1,43 @@
 ---
 title: "Output format"
-description: "Understand the TCP/NDJSON delivery format and receiver expectations."
+description: "TCP/NDJSON framing and receiver requirements."
 ---
 
 The relay sends **newline-delimited JSON (NDJSON) over TCP**.
 
-## Transport and framing
-
-Each record is one JSON object followed by a newline:
-
-```text
-{"...":"..."}\n
-{"...":"..."}\n
-{"...":"..."}\n
-```
-
-A receiver should treat each newline as a record boundary rather than waiting for a JSON array or a larger document.
-
-## Alert and case records
-
-Alert and case events are transmitted as JSON records. The receiving workflow can distinguish alert and case records using fields in the emitted JSON.
-
-Before creating a production SIEM parser, capture representative alert and case events from your deployed version and validate the fields used for routing and mapping.
-
-## Separate delivery paths
-
-Alert and case streams have independent destination settings:
-
-```text
-Alert destination: --alert-syslog-ip + --alert-syslog-port
-Case destination:  --case-syslog-ip  + --case-syslog-port
-```
-
-This allows separate ingestion paths:
-
-```text
-Stellar Cyber API
-       |
-       v
-Relay daemon
-   |        |
-   |        +--> Case listener
-   +-----------> Alert listener
-```
-
-Both streams can also point to the same downstream system.
-
-## About the `syslog` option names
-
-The runtime CLI retains option names such as `--alert-syslog-ip` and `--case-syslog-port`. The documented payload itself is **NDJSON over TCP, one JSON object per line**.
-
 <Info>
-Configure the receiver for line-delimited JSON over TCP. Do not assume RFC 3164 or RFC 5424 framing solely because the CLI option names contain `syslog`.
+The CLI uses historical option names such as `--alert-syslog-ip`, but the payload is not RFC 3164/5424 syslog.
 </Info>
+
+## Framing
+
+Each line is one JSON object:
+
+```text
+{"...":"..."}\n
+{"...":"..."}\n
+```
+
+The receiver must treat each newline as a record boundary.
+
+## Destinations
+
+Alert and Case streams use independent destination settings:
+
+```text
+Alert: --alert-syslog-ip + --alert-syslog-port
+Case:  --case-syslog-ip  + --case-syslog-port
+```
+
+They may point to separate listeners or the same downstream system.
 
 ## Receiver checklist
 
-Verify the following before production use:
+Before production use, verify that:
 
-- The receiver is listening on the configured TCP port.
-- Network policy allows the relay host to connect.
-- A newline is treated as the record boundary.
-- Each line parses as one JSON object.
-- Alert and case routing is tested with real sample records.
-- SIEM-side timestamp, source-type, and field mappings are validated against actual output.
+- The TCP listener is reachable from the relay host.
+- Each line is parsed as one JSON object.
+- Alert and Case samples are routed correctly.
+- SIEM timestamp, source type, and field mappings match actual relay output.
 
-## Case summary output
-
-The case example uses:
-
-```bash
---case-include-summary \
---no-case-format-summary
-```
-
-These options are useful when the destination workflow needs the case summary while preserving it without additional formatting.
+Capture representative events from your deployed version before finalizing the production parser.
