@@ -1,89 +1,73 @@
 ---
-title: "문제 해결"
-sidebarTitle: "문제 해결"
-description: "인증, 서비스 및 TCP 전달 문제를 확인합니다."
+title: "Troubleshooting"
+description: "Stellar Relay 문제를 증상별로 진단합니다."
 ---
 
-## API token 오류
+# Troubleshooting
 
-Wizard에서는 유효한 All-Access API token을 입력합니다.
-
-수동 CLI에서는:
-
-```bash
-export STELLAR_TOKEN='YOUR_ALL_ACCESS_TOKEN'
-```
-
-## 스트림 설정 오류
-
-활성화한 각 스트림에는 interval, destination IP, destination port가 모두 필요합니다.
-
-잘못된 IP, 1초 미만 interval, `1-65535` 범위를 벗어난 port, Alert/Case 모두 비활성화된 설정도 거부됩니다.
-
-전체 옵션은 [설정](/ko/configuration)을 참고하십시오.
-
-## "Another instance is already running"
-
-기존 systemd 서비스 또는 foreground 프로세스를 확인합니다.
+## Service가 시작되지 않음
 
 ```bash
 sudo systemctl status stellar-alert-case-syslog
-ps -ef | grep '[S]tellar_Alert_Case_Syslog.py'
+sudo journalctl -u stellar-alert-case-syslog -n 100 --no-pager
 ```
 
-다른 Relay 프로세스가 실행 중일 때 lock 파일부터 삭제하지 마십시오.
-
-## systemd 설치 실패
-
-Wizard는 sudo 권한이 필요합니다.
+설정이 잘못되었다면 Wizard를 다시 실행합니다.
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py --setup
 ```
 
-필요한 경우 sudo 비밀번호를 입력합니다.
+## API 인증 실패
 
-## 서비스가 실행되지 않음
+확인 항목:
+
+- Stellar Host / User ID
+- All-Access API Token 유효성
+- Outbound HTTPS 연결
+- systemd 실행 시 Token Environment File
+
+Wizard/Service는 `STELLAR_TOKEN`을 사용합니다. Token을 Script에 hard-code하지 마십시오.
+
+## Alert 또는 Case가 들어오지 않음
+
+사용할 Stream에 다음 세 값이 모두 있는지 확인합니다.
+
+```text
+interval
+destination IP
+destination port
+```
+
+First-run Lookback과 Stellar 측 실제 Data 존재 여부도 확인합니다.
+
+## Receiver에 Data가 오지 않음
+
+TCP 연결 확인:
+
+```bash
+nc -vz <DESTINATION_IP> <PORT>
+```
+
+Receiver가 RFC Syslog가 아니라 **NDJSON over TCP**를 받도록 설정되어 있는지도 확인합니다.
+
+Receiver가 Down이면 Record는 SQLite Queue에 Pending 상태로 남고 재시도됩니다.
+
+## Another instance is already running
+
+같은 State/Lock Path는 한 Process만 사용해야 합니다.
+
+Lock file을 삭제하기 전에 기존 Service/Process를 확인합니다.
 
 ```bash
 sudo systemctl status stellar-alert-case-syslog
-sudo journalctl -u stellar-alert-case-syslog -n 50 --no-pager
+ps -ef | grep Stellar_Alert_Case_Syslog.py
 ```
 
-## 서비스는 active인데 데이터가 오지 않음
+## JSON Parsing 실패
 
-먼저 journal을 확인합니다.
+Receiver는 LF로 끝나는 각 Line을 하나의 JSON object로 parse해야 합니다.
 
-```bash
-sudo journalctl -u stellar-alert-case-syslog -f
-```
+## Backfill 중 Duplicate 발생
 
-다음을 순서대로 확인하십시오.
-
-1. Stellar Cyber host, User ID, API token
-2. Alert/Case interval과 destination
-3. 수신기까지 TCP 연결
-4. 수신기가 한 줄당 JSON 객체 하나를 처리하는지 여부
-
-## 수신기가 내려감
-
-미전송 데이터는 SQLite queue에 남아 재시도됩니다. 수신기 또는 네트워크를 복구한 뒤 journal에서 복구 상태를 확인하십시오.
-
-## JSON parsing 문제
-
-Relay는 TCP NDJSON을 전송합니다.
-
-```text
-JSON object + newline
-JSON object + newline
-```
-
-수신기는 RFC Syslog가 아니라 line-delimited JSON으로 구성해야 합니다.
-
-## 추가 진단
-
-상세 fetch/enqueue/send 로그가 필요할 때 수동 실행에 `--debug`를 추가합니다.
-
-```bash
-python3 Stellar_Alert_Case_Syslog.py ... --debug
-```
+정상 동작입니다. `--backfill DAYS`는 normal checkpoint를 무시하므로 historical record를 다시 보낼 수 있습니다.
