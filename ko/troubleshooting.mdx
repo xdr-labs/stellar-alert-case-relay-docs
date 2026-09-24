@@ -1,16 +1,38 @@
 ---
 title: "문제 해결"
 sidebarTitle: "문제 해결"
-description: "스트림 설정, systemd 상태, TCP NDJSON 전달 문제를 확인합니다."
+description: "Wizard 버전, 인증, 스트림 설정, systemd, API 및 TCP 전달 문제를 확인합니다."
 ---
 
-먼저 설정이 완전한지 확인하십시오. Alert와 Case 스트림은 서로 독립적으로 설정되며, 일부 필수 항목만 설정된 스트림은 오류로 처리됩니다.
+## `--setup`을 인식하지 못함
+
+Wizard 버전인지 확인합니다.
+
+```bash
+python3 Stellar_Alert_Case_Syslog.py --help | grep -- --setup
+```
+
+아무 출력이 없다면 현재 설치된 스크립트는 이전 버전이며 이 문서의 대화형/systemd 자동 설치 기능을 지원하지 않습니다.
+
+## API token이 필요하다는 오류
+
+Wizard에서는 All-Access API token을 입력해야 합니다.
+
+수동 CLI에서는 다음 환경변수를 사용할 수 있습니다.
+
+```bash
+export STELLAR_TOKEN='YOUR_ALL_ACCESS_TOKEN'
+```
+
+또는 `--token`을 사용할 수 있습니다.
+
+명령행 token은 shell history나 process list에 노출될 수 있으므로 수동 실행에서는 `STELLAR_TOKEN`을 권장합니다.
 
 ## 스트림이 시작되지 않음
 
-문제가 발생한 스트림에 필요한 필수 설정이 모두 있는지 확인합니다.
+활성화된 각 스트림에는 필수 옵션 세 가지가 모두 필요합니다.
 
-### Alert 스트림
+### Alert
 
 ```text
 --alert-interval
@@ -18,7 +40,7 @@ description: "스트림 설정, systemd 상태, TCP NDJSON 전달 문제를 확�
 --alert-syslog-port
 ```
 
-### Case 스트림
+### Case
 
 ```text
 --case-interval
@@ -26,49 +48,79 @@ description: "스트림 설정, systemd 상태, TCP NDJSON 전달 문제를 확�
 --case-syslog-port
 ```
 
-특정 스트림의 모든 옵션을 생략하면 해당 스트림은 비활성화됩니다. 스트림 설정을 시작했지만 필수 옵션이 누락되면 해당 스트림은 오류로 처리됩니다.
+현재 버전은 시작 전에 다음도 검증합니다.
+
+- Interval은 1 이상
+- 유효한 IPv4/IPv6 destination
+- TCP port 1-65535
+- 최소 하나의 완전한 스트림
+
+## "Another instance is already running"
+
+Relay는 process lock을 사용합니다. 이 메시지는 같은 lock path를 사용하는 다른 프로세스가 이미 실행 중이라는 의미입니다.
+
+먼저 기존 서비스/프로세스를 확인합니다.
+
+```bash
+sudo systemctl status stellar-alert-case-syslog
+ps -ef | grep '[S]tellar_Alert_Case_Syslog.py'
+```
+
+기존 프로세스가 실행 중인 상태에서 lock 파일부터 삭제하지 마십시오.
+
+## systemd 설치 실패
+
+Wizard는 `/usr/local/lib`, `/etc/default`, `/etc/systemd/system`에 파일을 만들기 위해 관리자 권한이 필요합니다.
+
+sudo 권한이 있는 계정으로 실행하고 요청될 경우 비밀번호를 입력합니다.
+
+```bash
+python3 Stellar_Alert_Case_Syslog.py --setup
+```
 
 ## 서비스가 실행되지 않음
 
-서비스 상태를 확인합니다.
+정확한 서비스명은 `stellar-alert-case-syslog`입니다.
 
 ```bash
-sudo systemctl status stellar-alert-case.service
+sudo systemctl status stellar-alert-case-syslog
+systemctl is-active stellar-alert-case-syslog
+systemctl is-enabled stellar-alert-case-syslog
 ```
 
-최근 unit 파일을 수정했다면 다음을 실행합니다.
+최근 로그:
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl restart stellar-alert-case.service
+sudo journalctl -u stellar-alert-case-syslog -n 50 --no-pager
 ```
 
-문제를 재현하면서 로그를 확인합니다.
+실시간 로그:
 
 ```bash
-journalctl -u stellar-alert-case.service -f
+sudo journalctl -u stellar-alert-case-syslog -f
 ```
 
-자동 복구를 위해 다음 설정을 유지합니다.
+## 서비스는 active인데 레코드가 오지 않음
 
-```ini
-Restart=on-failure
-RestartSec=10
-```
+systemd의 active 상태는 프로세스 실행 여부만 의미합니다. Journal에서 Stellar API fetch와 TCP send 결과를 확인해야 합니다.
 
-## 수신 시스템에 레코드가 도착하지 않음
+다음을 순서대로 확인합니다.
 
-Relay 호스트에서 대상 시스템까지의 경로를 확인합니다.
+1. Stellar Cyber host와 User ID
+2. API token 유효성
+3. 활성화된 스트림의 interval/IP/port
+4. Relay 호스트에서 destination listener까지 TCP 연결
+5. 수신 시스템이 TCP 한 줄당 JSON 객체 하나를 처리하는지 여부
 
-1. 문제가 있는 스트림의 대상 IP와 port가 올바른지 확인합니다.
-2. 수신 시스템이 해당 TCP port에서 listening 중인지 확인합니다.
-3. Firewall 및 network policy가 연결을 허용하는지 확인합니다.
-4. 해당 Alert 또는 Case 스트림이 필수 설정을 모두 갖추고 활성화되어 있는지 확인합니다.
-5. 수신 시스템이 TCP 기반 newline-delimited JSON을 처리하도록 설정되어 있는지 확인합니다.
+## TCP 수신기가 내려감
 
-## 수신 시스템이 레코드를 parsing하지 못함
+Relay는 전송하지 못한 row를 SQLite queue에 보존하고 retry/recovery 상태로 전환합니다. 전송 실패 데이터를 sent로 처리하지 않습니다.
 
-예상되는 framing은 다음과 같습니다.
+수신기와 네트워크를 복구한 뒤 journal을 따라가며 재전송 상태를 확인하십시오.
+
+## 수신 시스템이 parsing하지 못함
+
+예상 framing:
 
 ```text
 JSON object + newline
@@ -76,44 +128,29 @@ JSON object + newline
 ...
 ```
 
-하나의 큰 JSON 문서 또는 전통적인 RFC syslog framing을 기대하는 parser로 설정하지 마십시오. 실제 배포된 Relay에서 생성된 대표 이벤트를 이용해 mapping을 검증하십시오.
+전통적인 RFC syslog framing이 아니라 TCP NDJSON입니다.
 
-## Case fetch 문제 확인
+## Initial lookback
 
-권장 Case 설정에는 다음 옵션이 포함됩니다.
+`--initial-lookback-hours`는 0 이상의 값이어야 합니다.
 
-```bash
---case-fetch-timeout 90 \
---case-include-summary \
---no-case-format-summary
-```
+- `48`: checkpoint가 없는 최초 실행에서 이전 48시간 조회
+- `0`: 최근 1분만 조회
 
-Case 전달이 지연되거나 일부 데이터가 누락되는 경우 이 설정과 Stellar Cyber API 접근 상태를 함께 확인하십시오.
+## Backfill
+
+`--backfill DAYS`는 1 이상의 값이어야 합니다. Backfill은 정상 checkpoint를 무시하고 지정 기간의 데이터를 다시 보낼 수 있습니다.
+
+## 이전 `--case-fetch-timeout` 예제
+
+이 문서의 Wizard 버전에는 `--case-fetch-timeout` 옵션이 없습니다.
+
+이전 명령이나 문서에 해당 옵션이 있다면 현재 버전에서는 제거하십시오.
 
 ## Debug 모드
 
-`--debug`는 문제 해결 시에만 사용하십시오.
+```bash
+python3 Stellar_Alert_Case_Syslog.py ... --debug
+```
 
-<Warning>
-  운영 환경에서 추가 logging이 의도적으로 필요한 경우가 아니라면 문제 해결이 끝난 뒤 debug 모드를 비활성화하십시오.
-</Warning>
-
-## 빠른 확인 항목
-
-<CardGroup cols={2}>
-  <Card title="서비스 상태" icon="server">
-    systemd unit이 active 상태인지 확인하고 journal에서 런타임 오류를 확인합니다.
-  </Card>
-
-  <Card title="스트림 설정 완전성" icon="list-check">
-    활성화된 각 스트림에 interval, 대상 IP, 대상 port가 모두 설정되어 있는지 확인합니다.
-  </Card>
-
-  <Card title="TCP 연결" icon="network-wired">
-    Relay 호스트에서 설정된 각 destination listener까지 연결 가능한지 확인합니다.
-  </Card>
-
-  <Card title="NDJSON parsing" icon="code">
-    수신 시스템이 newline으로 구분된 각 JSON 객체를 하나의 이벤트로 처리하는지 확인합니다.
-  </Card>
-</CardGroup>
+Fetch/enqueue/send 상세 진단이 필요할 때 사용하고, 문제 해결 후에는 해제하십시오.
