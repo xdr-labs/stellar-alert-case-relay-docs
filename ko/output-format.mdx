@@ -1,44 +1,35 @@
 ---
-title: "출력 형식"
-sidebarTitle: "출력 형식"
-description: "TCP/NDJSON framing과 수신 시스템 요구사항을 설명합니다."
+title: "Output Format"
+description: "Stellar Relay NDJSON over TCP Receiver 요구사항."
 ---
 
-Relay는 **TCP 기반 newline-delimited JSON(NDJSON)** 을 전송합니다.
+# Output Format
 
-<Info>
-CLI에는 `--alert-syslog-ip` 같은 기존 명칭이 남아 있지만 payload는 RFC 3164/5424 Syslog가 아닙니다.
-</Info>
+Stellar Relay는 **raw TCP connection으로 NDJSON**을 전송합니다.
 
-## Framing
+각 Record는:
 
-한 줄에 JSON 객체 하나가 전달됩니다.
+- UTF-8 JSON object 하나
+- LF(`\n`)로 종료
+- 한 줄 단위 전송
 
-```text
-{"...":"..."}\n
-{"...":"..."}\n
-```
-
-수신 시스템은 각 newline을 레코드 경계로 처리해야 합니다.
-
-## 전송 대상
-
-Alert와 Case는 서로 독립적인 destination을 사용합니다.
+예:
 
 ```text
-Alert: --alert-syslog-ip + --alert-syslog-port
-Case:  --case-syslog-ip  + --case-syslog-port
+{"stellar_record_type":"alert",...}\n
+{"stellar_record_type":"case",...}\n
 ```
 
-두 스트림은 서로 다른 listener 또는 같은 수신 시스템으로 보낼 수 있습니다.
+Receiver는 line boundary를 유지하고 각 줄을 독립적인 JSON object로 parse해야 합니다.
 
-## 수신기 체크리스트
+> Historical CLI option의 `--alert-syslog-*`, `--case-syslog-*` 명칭과 달리 payload는 RFC 5424 Syslog가 아닙니다.
 
-운영 적용 전에 다음을 확인하십시오.
+Alert와 Case는 서로 다른 Destination을 사용할 수도 있고 같은 Destination을 공유할 수도 있습니다. 같은 Destination에서는 `stellar_record_type` 같은 JSON field로 구분합니다.
 
-- Relay 호스트에서 TCP listener에 연결 가능
-- 각 line을 하나의 JSON 객체로 parsing
-- Alert와 Case sample routing 확인
-- 실제 출력 기준 SIEM timestamp, source type, field mapping 확인
+## Receiver Checklist
 
-운영 parser를 확정하기 전에 실제 배포 버전의 대표 이벤트를 수집해 검증하는 것을 권장합니다.
+- Relay Host에서 TCP Listener 접근 가능
+- Newline-delimited UTF-8 수신
+- 각 Line을 JSON으로 parse
+- Configured Port 방화벽 허용
+- Retry/Backfill Burst를 처리할 충분한 Receiver Capacity
