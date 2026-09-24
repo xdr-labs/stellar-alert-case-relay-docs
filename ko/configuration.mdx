@@ -12,10 +12,10 @@ Relay는 대화형 Setup Wizard와 기존 CLI 인터페이스를 모두 지원�
 | --- | --- |
 | `--setup` | 대화형 설정/systemd 설치 Wizard 실행 |
 | `--host` | Stellar Cyber host |
-| `--userid` | Stellar Cyber User ID |
+| `--userid` | Stellar Cyber User ID (이메일 형식) |
 | `--token` | All-Access API token |
 | `STELLAR_TOKEN` | API token을 전달하는 권장 환경변수 |
-| `--initial-lookback-hours` | checkpoint가 없는 최초 실행의 조회 범위. `0`은 최근 1분 |
+| `--initial-lookback-hours` | checkpoint가 없는 최초 실행의 조회 범위. `0`은 1분 window이며 Alert는 stability cutoff를 기준으로 계산 |
 | `--backfill DAYS` | 정상 checkpoint를 무시하고 매 cycle마다 최근 N일을 fetch/send |
 | `--db-path` | SQLite queue/checkpoint DB 경로 |
 | `--log-dir` | 전송/fetch 로그 디렉터리 |
