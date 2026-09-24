@@ -20,7 +20,7 @@ You need:
 - Python 3
 - Network access to the Stellar Cyber API
 - Network access to the destination TCP listener
-- Stellar Cyber User ID and All-Access API token
+- Stellar Cyber email-format User ID and All-Access API token
 - Linux with systemd for the final production step
 
 Replace the example receiver IPs and ports below with your actual values.
@@ -40,7 +40,7 @@ Start with the simplest path: Alert only, foreground, no Wizard, no systemd.
 ```bash
 python3 Stellar_Alert_Case_Syslog.py \
   --host YOUR_STELLAR_HOST \
-  --userid YOUR_USER_ID \
+  --userid YOUR_USER_EMAIL \
   --alert-interval 60 \
   --alert-syslog-ip 10.10.10.20 \
   --alert-syslog-port 5201 \
@@ -56,7 +56,7 @@ Confirm that:
 
 Let it run for a few fetch cycles, then stop it with **Ctrl+C**.
 
-The test uses `--initial-lookback-hours 0`, so a host without an existing checkpoint starts with only the last 1 minute instead of a large historical window.
+The test uses `--initial-lookback-hours 0`, which limits the initial fetch to a 1-minute window. For Alert, that window ends at the configured stability cutoff; for Case, it is based on the current time.
 
 <Note>
 If you only plan to operate Alert forwarding, you can skip the combined test and continue to the production setup step after this test succeeds.
@@ -69,7 +69,7 @@ If both streams will be used in production, test them together before installing
 ```bash
 python3 Stellar_Alert_Case_Syslog.py \
   --host YOUR_STELLAR_HOST \
-  --userid YOUR_USER_ID \
+  --userid YOUR_USER_EMAIL \
   --alert-interval 60 \
   --alert-syslog-ip 10.10.10.20 \
   --alert-syslog-port 5201 \
