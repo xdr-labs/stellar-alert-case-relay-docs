@@ -11,10 +11,10 @@ The relay supports both an interactive setup wizard and the original CLI interfa
 | --- | --- |
 | `--setup` | Run the interactive setup/systemd wizard |
 | `--host` | Stellar Cyber host |
-| `--userid` | Stellar Cyber user ID |
+| `--userid` | Stellar Cyber user ID (email format) |
 | `--token` | All-Access API token |
 | `STELLAR_TOKEN` | Preferred environment-variable source for the API token |
-| `--initial-lookback-hours` | First-run lookback when no checkpoint exists; `0` means last 1 minute |
+| `--initial-lookback-hours` | First-run lookback when no checkpoint exists; `0` means a 1-minute initial window. Alert is anchored to the stability cutoff |
 | `--backfill DAYS` | Fetch/send the last N days every cycle, ignoring normal checkpoints |
 | `--db-path` | SQLite queue/checkpoint database path |
 | `--log-dir` | Send/fetch log directory |
