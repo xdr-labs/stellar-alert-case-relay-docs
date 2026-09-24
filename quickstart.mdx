@@ -1,68 +1,108 @@
 ---
 title: "Quickstart"
-description: "Start Stellar alert forwarding, case forwarding, or both streams."
+description: "Configure the relay interactively or run alert/case forwarding manually."
 ---
 
-At least one stream must be fully configured. Alert and case forwarding can be enabled independently or together.
+The recommended way to configure a new relay is the interactive setup wizard. The original command-line mode remains available for automation and manual foreground runs.
 
-## Get the relay script
+## Verify the script version
 
-`Stellar_Alert_Case_Syslog.py` is maintained in the public XDR Labs source repository:
-
-**Source repository:** [xdr-labs/Stellar-Case-Alert-to-Sylog](https://github.com/xdr-labs/Stellar-Case-Alert-to-Sylog)
-
-The script is stored at the repository root as `Stellar_Alert_Case_Syslog.py`.
-
-### Option 1: Clone the repository
-
-This is the recommended approach if you want the script together with the project README and supporting documentation.
+This guide requires the wizard-enabled build.
 
 ```bash
-git clone https://github.com/xdr-labs/Stellar-Case-Alert-to-Sylog.git
-cd Stellar-Case-Alert-to-Sylog
-ls -l Stellar_Alert_Case_Syslog.py
+python3 Stellar_Alert_Case_Syslog.py --help | grep -- --setup
 ```
 
-### Option 2: Download only the Python script
+Expected output includes `--setup`. If it does not, update the runtime script before using the wizard instructions below.
 
-If you only need the relay script, download the current `main` version directly:
+## Requirements
 
-```bash
-curl -fL \
-  -o Stellar_Alert_Case_Syslog.py \
-  https://raw.githubusercontent.com/xdr-labs/Stellar-Case-Alert-to-Sylog/main/Stellar_Alert_Case_Syslog.py
-```
-
-Or with `wget`:
-
-```bash
-wget -O Stellar_Alert_Case_Syslog.py \
-  https://raw.githubusercontent.com/xdr-labs/Stellar-Case-Alert-to-Sylog/main/Stellar_Alert_Case_Syslog.py
-```
-
-After downloading, confirm that the file is present before continuing:
-
-```bash
-ls -lh Stellar_Alert_Case_Syslog.py
-```
-
-<Note>
-  The GitHub repository is the source of truth for the runtime script. If you are preparing a production deployment, use the version from that repository rather than copying the script from an old host or document.
-</Note>
-
-## Before you start
-
-Make sure the relay host has:
+The relay host needs:
 
 - Python 3
 - Network access to the Stellar Cyber API
 - Network access to each destination TCP listener
-- Valid Stellar Cyber API access for the runtime script
-- `Stellar_Alert_Case_Syslog.py` downloaded from the source repository above
+- A valid Stellar Cyber user ID and All-Access API token
+- Linux with systemd if you want automatic service installation
 
-## Alert only
+## Recommended: interactive setup
 
-Use this mode when only alert forwarding is required.
+Run the script with no arguments:
+
+```bash
+python3 Stellar_Alert_Case_Syslog.py
+```
+
+or explicitly start the wizard:
+
+```bash
+python3 Stellar_Alert_Case_Syslog.py --setup
+```
+
+The wizard asks for:
+
+1. Stellar Cyber host
+2. User ID
+3. All-Access API token
+4. Whether Alert forwarding is enabled
+5. Whether Case forwarding is enabled
+6. Interval, destination IP, and destination TCP port for each enabled stream
+7. Initial lookback in hours
+8. Whether to run continuously with systemd
+
+At least one of Alert or Case must be enabled.
+
+### Wizard defaults
+
+| Item | Default |
+| --- | ---: |
+| Alert enabled | Yes |
+| Case enabled | No |
+| Alert interval | 60 seconds |
+| Case interval | 300 seconds |
+| Alert port | 5201 |
+| Case port | 5202 |
+| Initial lookback | 48 hours |
+
+Enter `0` for the initial lookback to use only the last 1 minute when no checkpoint exists.
+
+## Automatic systemd installation
+
+At the end of the wizard, answer **Yes** to:
+
+```text
+Run continuously with systemd (auto-start on boot)?
+```
+
+The script may ask for your sudo password. It then:
+
+- Copies the relay to `/usr/local/lib/stellar-alert-case/Stellar_Alert_Case_Syslog.py`
+- Stores `STELLAR_TOKEN` in `/etc/default/stellar-alert-case-syslog` with mode `0600`
+- Creates `/etc/systemd/system/stellar-alert-case-syslog.service`
+- Runs `systemctl daemon-reload`
+- Enables the service for boot
+- Starts/restarts the service immediately
+- Prints `systemctl status`
+- Prints the most recent journal entries
+- Verifies that the service is both active and enabled
+
+<Note>
+The API token is not placed in the systemd `ExecStart` command. The service reads it from the protected environment file.
+</Note>
+
+If you answer **No** to systemd installation, the wizard prints the equivalent manual command and asks whether to run it immediately in the foreground.
+
+## Manual CLI mode
+
+For manual operation, prefer the `STELLAR_TOKEN` environment variable so the token does not appear in the command line:
+
+```bash
+export STELLAR_TOKEN='YOUR_ALL_ACCESS_TOKEN'
+```
+
+You can also pass `--token`, but that may expose the value through shell history or process listings.
+
+### Alert only
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py \
@@ -71,57 +111,47 @@ python3 Stellar_Alert_Case_Syslog.py \
   --alert-syslog-port 5201
 ```
 
-The alert stream requires all three settings: interval, destination IP, and destination port.
-
-## Case only
-
-A case-only deployment can be started with:
+### Case only
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py \
-  --case-interval 3600 \
+  --case-interval 300 \
   --case-syslog-ip 10.10.10.20 \
-  --case-syslog-port 5142 \
-  --case-include-summary \
-  --no-case-format-summary \
-  --case-fetch-timeout 90
+  --case-syslog-port 5202
 ```
 
-The case stream requires an interval, destination IP, and destination port. The example also enables the recommended case summary and fetch-timeout options.
-
-## Alert and case together
-
-Configure both complete streams in the same process:
+### Alert and Case together
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py \
   --alert-interval 60 \
   --alert-syslog-ip 10.10.10.20 \
   --alert-syslog-port 5201 \
-  --case-interval 3600 \
+  --case-interval 300 \
   --case-syslog-ip 10.10.10.20 \
-  --case-syslog-port 5142 \
-  --case-include-summary \
-  --no-case-format-summary \
-  --case-fetch-timeout 90
+  --case-syslog-port 5202
 ```
 
-Alert and case streams can point to the same receiver or to separate destinations.
+Alert and Case may use the same receiver or different destinations.
 
-## Stream enablement rules
+## Stream validation
 
 | Stream | Required settings |
 | --- | --- |
 | Alert | `--alert-interval`, `--alert-syslog-ip`, `--alert-syslog-port` |
 | Case | `--case-interval`, `--case-syslog-ip`, `--case-syslog-port` |
 
-- If all options for a stream are omitted, that stream is disabled.
-- If configuration for a stream is started but one of its required options is missing, that stream is an error.
-- At least one stream must be fully configured.
+The relay rejects:
+
+- Partially configured streams
+- Intervals less than 1 second
+- Invalid IPv4/IPv6 destination addresses
+- Ports outside `1-65535`
+- A configuration with neither stream enabled
 
 ## What the receiver gets
 
-The relay sends newline-delimited JSON (NDJSON) over TCP:
+The relay sends one JSON object per line over TCP:
 
 ```text
 {one JSON object}\n
@@ -129,13 +159,11 @@ The relay sends newline-delimited JSON (NDJSON) over TCP:
 ...
 ```
 
-Each JSON object occupies one line. Alert and case records can be distinguished using fields in the emitted JSON.
-
 <CardGroup cols={2}>
   <Card title="Configuration reference" icon="gear" href="/configuration">
-    Review the available stream and case options.
+    Review all CLI and runtime options.
   </Card>
-  <Card title="Run continuously" icon="server" href="/operations">
-    Install the relay as a systemd service.
+  <Card title="systemd operations" icon="server" href="/operations">
+    Manage the automatically installed service.
   </Card>
 </CardGroup>
