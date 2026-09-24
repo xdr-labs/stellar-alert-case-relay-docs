@@ -1,15 +1,35 @@
 ---
 title: "Troubleshooting"
-description: "Check stream configuration, systemd state, and TCP NDJSON delivery."
+description: "Diagnose wizard version, credentials, stream configuration, systemd, API, and TCP delivery."
 ---
 
-Start with configuration completeness. Alert and case streams are configured independently, and a partially configured stream is treated as an error.
+## `--setup` is not recognized
+
+Confirm that the host has the wizard-enabled runtime:
+
+```bash
+python3 Stellar_Alert_Case_Syslog.py --help | grep -- --setup
+```
+
+If nothing is returned, the installed script is an older build and does not support the interactive/systemd workflow described in this guide.
+
+## API token is required
+
+The wizard asks for an All-Access API token. In manual CLI mode you can provide it through:
+
+```bash
+export STELLAR_TOKEN='YOUR_ALL_ACCESS_TOKEN'
+```
+
+or with `--token`.
+
+Prefer `STELLAR_TOKEN` for manual runs because command-line tokens may be visible in shell history or process listings.
 
 ## A stream will not start
 
-Verify that all required settings for the affected stream are present.
+Each enabled stream requires all three settings.
 
-### Alert stream
+### Alert
 
 ```text
 --alert-interval
@@ -17,7 +37,7 @@ Verify that all required settings for the affected stream are present.
 --alert-syslog-port
 ```
 
-### Case stream
+### Case
 
 ```text
 --case-interval
@@ -25,49 +45,81 @@ Verify that all required settings for the affected stream are present.
 --case-syslog-port
 ```
 
-If all options for a stream are omitted, that stream is disabled. If configuration for a stream is started but a required option is missing, that stream is an error.
+The current runtime also validates:
+
+- Interval >= 1
+- Valid IPv4 or IPv6 destination address
+- TCP port in the range 1-65535
+- At least one complete stream
+
+## "Another instance is already running"
+
+The relay uses a process lock. This message means another process is already using the configured lock path.
+
+Check for the existing service/process before starting another copy:
+
+```bash
+sudo systemctl status stellar-alert-case-syslog
+ps -ef | grep '[S]tellar_Alert_Case_Syslog.py'
+```
+
+Do not delete the lock file as a first response while an existing process is still running.
+
+## systemd installation fails
+
+The wizard needs administrator privileges to write under `/usr/local/lib`, `/etc/default`, and `/etc/systemd/system`.
+
+Run the wizard from an account with sudo access:
+
+```bash
+python3 Stellar_Alert_Case_Syslog.py --setup
+```
+
+and enter the sudo password when requested.
 
 ## The service is not running
 
-Check the service state:
+Use the exact service name:
 
 ```bash
-sudo systemctl status stellar-alert-case.service
+sudo systemctl status stellar-alert-case-syslog
+systemctl is-active stellar-alert-case-syslog
+systemctl is-enabled stellar-alert-case-syslog
 ```
 
-If the unit file was recently edited:
+Inspect recent logs:
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl restart stellar-alert-case.service
+sudo journalctl -u stellar-alert-case-syslog -n 50 --no-pager
 ```
 
-Follow logs while reproducing the problem:
+Follow logs live:
 
 ```bash
-journalctl -u stellar-alert-case.service -f
+sudo journalctl -u stellar-alert-case-syslog -f
 ```
 
-For automatic recovery, keep:
+## Service is active but no records arrive
 
-```ini
-Restart=on-failure
-RestartSec=10
-```
+An active systemd state only confirms that the process is running. Check the journal for API fetch and TCP delivery messages.
 
-## The receiver gets no records
+Then verify:
 
-Check the path from the relay host to the destination:
+1. Stellar Cyber host and user ID are correct.
+2. The API token is valid.
+3. The enabled stream has a valid interval, IP, and port.
+4. The destination listener is reachable from the relay host.
+5. The downstream receiver expects one JSON object per line over TCP.
 
-1. Confirm the destination IP and port for the affected stream.
-2. Confirm the receiver is listening on that TCP port.
-3. Confirm firewall and network policy allow the connection.
-4. Confirm the corresponding alert or case stream is fully enabled.
-5. Confirm the receiver expects newline-delimited JSON over TCP.
+## Receiver is unreachable
 
-## The receiver cannot parse records
+The relay keeps unsent rows in the SQLite queue and enters retry/recovery behavior. It does not mark an unsent record as delivered.
 
-The expected framing is:
+Check TCP reachability and the receiver process, then follow the relay journal while the listener returns.
+
+## Receiver cannot parse records
+
+Expected framing:
 
 ```text
 JSON object + newline
@@ -75,41 +127,31 @@ JSON object + newline
 ...
 ```
 
-Do not configure a parser that expects one large JSON document or traditional RFC syslog framing. Validate mappings with representative events from the deployed relay.
+The output is NDJSON over TCP, not traditional RFC syslog framing.
 
-## Case fetching needs investigation
+## Initial lookback
 
-The recommended case configuration includes:
+`--initial-lookback-hours` must be zero or positive.
 
-```bash
---case-fetch-timeout 90 \
---case-include-summary \
---no-case-format-summary
-```
+- `48`: use the previous 48 hours on the first run without a checkpoint.
+- `0`: use only the last 1 minute.
 
-Check these settings together with Stellar Cyber API reachability when case forwarding is delayed or incomplete.
+## Backfill
+
+`--backfill DAYS` must be a positive integer. Backfill ignores normal checkpoints and can resend records in the requested historical window.
+
+## Old `--case-fetch-timeout` examples
+
+The wizard-enabled runtime documented here does not expose `--case-fetch-timeout`.
+
+If an old command or document contains it, remove that option when using this version.
 
 ## Debug mode
 
-Use `--debug` only while troubleshooting.
+Use `--debug` for detailed fetch/enqueue/send diagnostics:
 
-<Warning>
-Disable debug mode after troubleshooting unless you intentionally need the additional logging in production.
-</Warning>
+```bash
+python3 Stellar_Alert_Case_Syslog.py ... --debug
+```
 
-## Quick checks
-
-<CardGroup cols={2}>
-  <Card title="Service state" icon="server">
-    Confirm the systemd unit is active and inspect the journal for runtime errors.
-  </Card>
-  <Card title="Stream completeness" icon="list-check">
-    Make sure every enabled stream has interval, destination IP, and destination port.
-  </Card>
-  <Card title="TCP reachability" icon="network-wired">
-    Verify the relay host can reach each configured destination listener.
-  </Card>
-  <Card title="NDJSON parsing" icon="code">
-    Confirm the receiver treats each newline-delimited JSON object as one event.
-  </Card>
-</CardGroup>
+Disable debug mode when the extra output is no longer required.
