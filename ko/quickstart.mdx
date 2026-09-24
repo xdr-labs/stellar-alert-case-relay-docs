@@ -1,189 +1,83 @@
 ---
 title: "빠른 시작"
-sidebarTitle: "빠른 시작"
-description: "Foreground에서 먼저 검증한 뒤 검증된 설정을 systemd 운영으로 전환합니다."
+description: "Interactive Wizard 또는 Manual CLI로 Stellar Relay를 설정합니다."
 ---
 
-새로 설치할 때는 **처음부터 systemd로 등록하지 않고 foreground에서 먼저 실제 전송을 검증하는 것을 권장합니다.** Alert와 Case가 정상적으로 전달되는 것을 확인한 뒤, 마지막에 Setup Wizard를 한 번 실행해 검증된 설정을 systemd 서비스로 운영합니다.
+# 빠른 시작
 
-이 방식이면 API 또는 수신기 설정이 잘못된 상태에서 서비스를 먼저 설치하는 일을 피할 수 있습니다.
-
-## 1. 스크립트 다운로드
+## 1. Script 준비
 
 ```bash
-curl -fL \
-  -o Stellar_Alert_Case_Syslog.py \
-  https://raw.githubusercontent.com/xdr-labs/Stellar-Case-Alert-to-Sylog/main/Stellar_Alert_Case_Syslog.py
+git clone https://github.com/xdr-labs/Stellar-Case-Alert-to-Sylog.git
+cd Stellar-Case-Alert-to-Sylog
 ```
 
-필요한 환경:
+Python 3.9+가 필요하며 Python standard library만 사용합니다.
 
-- Python 3
-- Stellar Cyber API로의 네트워크 연결
-- 대상 TCP listener로의 네트워크 연결
-- 이메일 형식의 Stellar Cyber User ID와 All-Access API token
-- 최종 운영 전환 시 Linux + systemd
-
-아래 예제의 수신기 IP와 port는 실제 환경의 값으로 변경하십시오.
-
-## 2. 테스트용 API token 설정
-
-Foreground 테스트에서는 token을 명령행에 직접 넣지 않고 `STELLAR_TOKEN`을 사용합니다.
+## 2. Setup Wizard 실행
 
 ```bash
-export STELLAR_TOKEN='YOUR_ALL_ACCESS_TOKEN'
+python3 Stellar_Alert_Case_Syslog.py
 ```
 
-## 3. Alert만 먼저 테스트
-
-가장 단순한 경로부터 확인합니다. 이 단계에서는 **Wizard와 systemd를 사용하지 않습니다.**
-
-```bash
-python3 Stellar_Alert_Case_Syslog.py \
-  --host YOUR_STELLAR_HOST \
-  --userid YOUR_USER_EMAIL \
-  --alert-interval 60 \
-  --alert-syslog-ip 10.10.10.20 \
-  --alert-syslog-port 5201 \
-  --initial-lookback-hours 0 \
-  --debug
-```
-
-다음을 확인합니다.
-
-- 인증/API 오류 없이 프로세스가 시작되는지
-- 설정한 TCP 수신기로 Alert가 들어오는지
-- 수신 데이터가 한 줄당 JSON 객체 하나로 들어오는지
-
-몇 번의 fetch cycle 동안 정상 동작하는 것을 확인한 뒤 **Ctrl+C**로 종료합니다.
-
-테스트에서는 `--initial-lookback-hours 0`을 사용해 최초 조회 범위를 1분으로 제한합니다. Alert는 stability cutoff를 기준으로 1분 window를 조회하고, Case는 현재 시간을 기준으로 1분을 조회하므로 처음부터 많은 과거 데이터를 전송하는 것을 피할 수 있습니다.
-
-<Note>
-운영에서도 Alert만 사용할 예정이라면 이 테스트가 성공한 뒤 Alert+Case 동시 테스트는 건너뛰고 최종 운영 설정으로 넘어가도 됩니다.
-</Note>
-
-## 4. Alert와 Case를 함께 테스트
-
-운영에서 두 스트림을 모두 사용할 경우 systemd 설치 전에 함께 실행해 봅니다.
-
-```bash
-python3 Stellar_Alert_Case_Syslog.py \
-  --host YOUR_STELLAR_HOST \
-  --userid YOUR_USER_EMAIL \
-  --alert-interval 60 \
-  --alert-syslog-ip 10.10.10.20 \
-  --alert-syslog-port 5201 \
-  --case-interval 300 \
-  --case-syslog-ip 10.10.10.20 \
-  --case-syslog-port 5202 \
-  --initial-lookback-hours 0 \
-  --debug
-```
-
-Alert와 Case가 각각 설정한 수신기로 정상 전달되는지 확인합니다.
-
-두 스트림은 같은 수신기를 사용해도 되고 서로 다른 IP/port를 사용해도 됩니다.
-
-정상 전달을 확인했으면 **Ctrl+C**로 foreground 프로세스를 종료합니다.
-
-## 5. 검증된 설정을 운영으로 전환
-
-이제 Setup Wizard를 실행합니다.
+또는:
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py --setup
 ```
 
-앞의 foreground 테스트에서 **실제로 정상 동작한 값**을 그대로 입력합니다.
+Wizard에서 다음을 설정합니다.
 
-1. Stellar Cyber host
-2. User ID
-3. All-Access API token
-4. Alert 활성화 여부
-5. Case 활성화 여부
-6. 각 스트림에서 검증한 interval과 destination
-7. Initial lookback
+- Stellar Host / User ID / All-Access API Token
+- Alert / Case 사용 여부
+- 활성화한 Stream의 Interval / Destination IP / TCP Port
+- First-run Lookback
+- systemd 자동 설치/시작 여부
 
-마지막 질문:
+기본값:
+
+| 항목 | 기본값 |
+|---|---:|
+| Alert | 활성화 |
+| Alert Interval | 60초 |
+| Alert Port | 5201 |
+| Case | 비활성화 |
+| Case Interval | 300초 |
+| Case Port | 5202 |
+| Initial Lookback | 48시간 |
+
+`--initial-lookback-hours 0`은 최근 1분입니다.
+
+## 3. Service 운영 선택
+
+systemd 질문에 **Yes**를 선택하면 다음 Service를 설치·활성화·시작합니다.
 
 ```text
-Run continuously with systemd (auto-start on boot)?
+stellar-alert-case-syslog.service
 ```
 
-에서는 **Yes**를 선택합니다.
-
-Wizard가 `stellar-alert-case-syslog.service`를 설치하고, 부팅 자동 시작을 활성화하고, 즉시 서비스를 시작한 뒤 상태와 최근 로그를 보여줍니다.
-
-## 6. 운영 서비스 확인
-
-서비스가 실행 중이고 부팅 시 자동 시작되도록 설정됐는지 확인합니다.
+확인:
 
 ```bash
 sudo systemctl status stellar-alert-case-syslog
-systemctl is-enabled stellar-alert-case-syslog
-```
-
-최근 로그도 확인합니다.
-
-```bash
 sudo journalctl -u stellar-alert-case-syslog -n 20 --no-pager
 ```
 
-반복되는 API/인증/TCP 전송 오류가 없고 수신기에도 데이터가 계속 들어오면 운영 전환이 완료된 것입니다.
+## Manual CLI
 
-## 7. 운영 중에는 로그만 확인
-
-평상시에는 대부분 journal만 확인하면 됩니다.
-
-### 실시간 로그 보기
+Token을 shell history에 넣지 않도록 `STELLAR_TOKEN` 사용을 권장합니다.
 
 ```bash
-sudo journalctl -u stellar-alert-case-syslog -f
+export STELLAR_TOKEN='YOUR_TOKEN'
+
+python3 Stellar_Alert_Case_Syslog.py \
+  --host YOUR_STELLAR_HOST \
+  --userid YOUR_USER_ID \
+  --alert-interval 60 \
+  --alert-syslog-ip 10.10.10.20 \
+  --alert-syslog-port 5201
 ```
 
-로그 확인을 끝낼 때는 **Ctrl+C**를 누릅니다. 서비스 자체는 종료되지 않습니다.
+Alert와 Case는 각각 `interval + IP + port` 세 값을 모두 지정해야 활성화됩니다.
 
-### 최근 로그 50줄 확인
-
-```bash
-sudo journalctl -u stellar-alert-case-syslog -n 50 --no-pager
-```
-
-### 오늘 로그 전체 확인
-
-```bash
-sudo journalctl -u stellar-alert-case-syslog --since today --no-pager
-```
-
-서비스가 active이고 journal에서 정상적인 fetch/send가 계속 보이며 반복 오류가 없다면 일반적으로 추가 작업은 필요하지 않습니다.
-
-## 권장 배포 순서
-
-```text
-스크립트 다운로드
-      |
-      v
-Foreground Alert 테스트
-      |
-      v
-Foreground Alert + Case 테스트 (Case 사용 시)
-      |
-      v
-검증된 값을 Setup Wizard에 입력
-      |
-      v
-systemd 활성화
-      |
-      v
-운영 중 journal 확인
-```
-
-<CardGroup cols={2}>
-  <Card title="설정" icon="gear" href="/ko/configuration">
-    전체 옵션을 확인합니다.
-  </Card>
-  <Card title="systemd 운영" icon="server" href="/ko/operations">
-    서비스 운영 명령을 확인합니다.
-  </Card>
-</CardGroup>
+전체 option과 Case default는 [설정](/ko/configuration)을 참고하십시오.
