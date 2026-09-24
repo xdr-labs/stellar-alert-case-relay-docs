@@ -39,9 +39,12 @@ Start with the simplest path: Alert only, foreground, no Wizard, no systemd.
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py \
+  --host YOUR_STELLAR_HOST \
+  --userid YOUR_USER_ID \
   --alert-interval 60 \
   --alert-syslog-ip 10.10.10.20 \
   --alert-syslog-port 5201 \
+  --initial-lookback-hours 0 \
   --debug
 ```
 
@@ -53,6 +56,8 @@ Confirm that:
 
 Let it run for a few fetch cycles, then stop it with **Ctrl+C**.
 
+The test uses `--initial-lookback-hours 0`, so a host without an existing checkpoint starts with only the last 1 minute instead of a large historical window.
+
 <Note>
 If you only plan to operate Alert forwarding, you can skip the combined test and continue to the production setup step after this test succeeds.
 </Note>
@@ -63,12 +68,15 @@ If both streams will be used in production, test them together before installing
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py \
+  --host YOUR_STELLAR_HOST \
+  --userid YOUR_USER_ID \
   --alert-interval 60 \
   --alert-syslog-ip 10.10.10.20 \
   --alert-syslog-port 5201 \
   --case-interval 300 \
   --case-syslog-ip 10.10.10.20 \
   --case-syslog-port 5202 \
+  --initial-lookback-hours 0 \
   --debug
 ```
 
