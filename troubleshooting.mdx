@@ -1,88 +1,73 @@
 ---
 title: "Troubleshooting"
-description: "Diagnose authentication, service, and TCP delivery problems."
+description: "Symptom-based checks for Stellar Relay."
 ---
 
-## API token is required
+# Troubleshooting
 
-With the wizard, enter a valid All-Access API token when prompted.
-
-For manual CLI runs:
-
-```bash
-export STELLAR_TOKEN='YOUR_ALL_ACCESS_TOKEN'
-```
-
-## Stream configuration error
-
-Each enabled stream requires its interval, destination IP, and destination port.
-
-The relay also rejects invalid IP addresses, intervals below 1 second, ports outside `1-65535`, and configurations with no enabled stream.
-
-See [Configuration](/configuration) for the full option reference.
-
-## "Another instance is already running"
-
-Check whether the systemd service or another foreground process is already running:
+## Service does not start
 
 ```bash
 sudo systemctl status stellar-alert-case-syslog
-ps -ef | grep '[S]tellar_Alert_Case_Syslog.py'
+sudo journalctl -u stellar-alert-case-syslog -n 100 --no-pager
 ```
 
-Do not remove the lock file while another relay process is running.
-
-## systemd installation fails
-
-The wizard needs sudo access to install the service. Run:
+Re-run the wizard if the configuration is wrong:
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py --setup
 ```
 
-and enter the sudo password when requested.
+## API authentication fails
 
-## Service is not running
+Check:
+
+- Stellar host and user ID
+- All-Access API token validity
+- outbound HTTPS connectivity
+- systemd token file if running as a service
+
+The wizard/service uses `STELLAR_TOKEN`; do not hard-code tokens into the script.
+
+## No Alert or Case data
+
+Confirm the intended stream is enabled with all three required values:
+
+```text
+interval
+destination IP
+destination port
+```
+
+Also check the first-run lookback and current Stellar data availability.
+
+## Receiver gets no data
+
+Check TCP reachability:
+
+```bash
+nc -vz <DESTINATION_IP> <PORT>
+```
+
+Then confirm the receiver expects **NDJSON over TCP**, not RFC syslog framing.
+
+If the receiver is down, records remain pending in the local SQLite queue and are retried.
+
+## Another instance is already running
+
+Only one process should use the same lock/state path.
+
+Check for an existing service/process before deleting any lock file:
 
 ```bash
 sudo systemctl status stellar-alert-case-syslog
-sudo journalctl -u stellar-alert-case-syslog -n 50 --no-pager
+ps -ef | grep Stellar_Alert_Case_Syslog.py
 ```
 
-## Service is active but no records arrive
+## JSON parsing fails
 
-Check the journal first:
+The receiver must parse one JSON object per LF-terminated line. Do not treat the stream as RFC 5424 text.
 
-```bash
-sudo journalctl -u stellar-alert-case-syslog -f
-```
+## Backfill creates duplicates
 
-Then verify:
-
-1. Stellar Cyber host, User ID, and API token
-2. Alert/Case interval and destination
-3. TCP reachability to the receiver
-4. Receiver parsing for one JSON object per line
-
-## Receiver is unreachable
-
-Unsent records remain in the SQLite queue and are retried. Restore the receiver/network path and follow the journal for recovery.
-
-## Receiver cannot parse records
-
-The relay sends NDJSON over TCP:
-
-```text
-JSON object + newline
-JSON object + newline
-```
-
-Configure the receiver for line-delimited JSON rather than RFC syslog framing.
-
-## More diagnostics
-
-Run manually with `--debug` when detailed fetch/enqueue/send diagnostics are needed:
-
-```bash
-python3 Stellar_Alert_Case_Syslog.py ... --debug
-```
+This is expected behavior. `--backfill DAYS` ignores normal checkpoints and can resend historical records.
