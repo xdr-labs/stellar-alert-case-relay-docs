@@ -1,112 +1,146 @@
 ---
 title: "Run continuously with systemd"
-description: "Keep the relay running at boot, recover from failures, and inspect service logs."
+description: "Install, start, verify, and operate the relay as a systemd service."
 ---
 
-Run the relay as a `systemd` service so it starts with the host and automatically recovers from process failures.
+The wizard-enabled relay can create and manage its own systemd service. Manual unit creation is no longer the recommended installation path.
 
-## Create the service unit
+## Install from the wizard
 
-Create:
+Run:
+
+```bash
+python3 Stellar_Alert_Case_Syslog.py --setup
+```
+
+Complete the Alert/Case configuration and answer **Yes** when prompted:
 
 ```text
-/etc/systemd/system/stellar-alert-case.service
+Run continuously with systemd (auto-start on boot)?
 ```
 
-Example:
+Administrator privileges are required. If the current shell is not root, the script runs sudo and may ask for your password.
+
+## Files installed
+
+The wizard creates or updates:
+
+```text
+/usr/local/lib/stellar-alert-case/Stellar_Alert_Case_Syslog.py
+/etc/default/stellar-alert-case-syslog
+/etc/systemd/system/stellar-alert-case-syslog.service
+```
+
+The token environment file is written with mode `0600`.
+
+The generated service uses the user who invoked the wizard, preserves that user's home directory for the default SQLite/log paths, and includes:
 
 ```ini
-[Unit]
-Description=Stellar Cyber Alert + Case Syslog daemon
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-User=aella
-Group=aella
-WorkingDirectory=/home/aella/kt
-ExecStart=/usr/bin/python3 /home/aella/kt/Stellar_Alert_Case_Syslog.py \
-  --alert-interval 60 \
-  --case-interval 3600 \
-  --alert-syslog-ip 10.10.10.20 \
-  --alert-syslog-port 5201 \
-  --case-syslog-ip 10.10.10.20 \
-  --case-syslog-port 5142 \
-  --case-include-summary \
-  --no-case-format-summary \
-  --case-fetch-timeout 90
-Restart=on-failure
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
+Restart=always
+RestartSec=5
+UMask=0077
 ```
 
-<Warning>
-Replace the example user, group, working directory, script path, destination addresses, and ports with values for your environment.
-</Warning>
+The API token is loaded through:
 
-## Enable and start
+```ini
+EnvironmentFile=-/etc/default/stellar-alert-case-syslog
+```
+
+and is not included in `ExecStart`.
+
+## What installation does
+
+The installer runs the equivalent of:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now stellar-alert-case.service
-sudo systemctl status stellar-alert-case.service
+sudo systemctl enable stellar-alert-case-syslog
+sudo systemctl restart stellar-alert-case-syslog
 ```
 
-After changing the unit file:
+It then displays:
+
+- Full service status
+- The most recent 20 journal entries
+- Active-state verification
+- Enabled-state verification
+
+A successful installation ends with a message that the service is both active and enabled.
+
+## Check status
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl restart stellar-alert-case.service
+sudo systemctl status stellar-alert-case-syslog
 ```
 
-## Follow service logs
+Check both runtime and boot state:
 
 ```bash
-journalctl -u stellar-alert-case.service -f
+systemctl is-active stellar-alert-case-syslog
+systemctl is-enabled stellar-alert-case-syslog
 ```
 
-To inspect the effective unit file:
+## Follow logs
 
 ```bash
-systemctl cat stellar-alert-case.service
+sudo journalctl -u stellar-alert-case-syslog -f
 ```
 
-## Automatic recovery
+Recent logs only:
 
-The recommended service settings are:
-
-```ini
-Restart=on-failure
-RestartSec=10
+```bash
+sudo journalctl -u stellar-alert-case-syslog -n 50 --no-pager
 ```
 
-This allows `systemd` to restart the daemon after a process failure without creating an immediate tight restart loop.
+The journal should be reviewed after installation to confirm that API fetching and TCP delivery are actually succeeding; an active process alone does not prove end-to-end delivery.
 
-## Operational features
+## Restart
 
-The relay is designed for continuous operation and includes:
+```bash
+sudo systemctl restart stellar-alert-case-syslog
+sudo systemctl status stellar-alert-case-syslog
+```
 
-- Fetch checkpointing
-- Send retry/recovery
-- Backfill
-- Separate alert and case destinations
+## Reconfigure
 
-## Operational tips
+Run the wizard again:
 
-- Keep `Restart=on-failure` enabled for automatic process recovery.
-- Use `--debug` only when troubleshooting.
-- Verify TCP reachability from the relay host to every configured destination.
-- Use separate alert and case listeners when the downstream workflows differ.
-- After editing the unit file, always run `systemctl daemon-reload` before restarting the service.
+```bash
+python3 Stellar_Alert_Case_Syslog.py --setup
+```
+
+Choose the new values and answer **Yes** to systemd installation. The script replaces the installed script/configuration, reloads systemd, and restarts the service.
+
+## Inspect the installed configuration
+
+View the unit:
+
+```bash
+systemctl cat stellar-alert-case-syslog
+```
+
+Do not print the token file into shared logs or support tickets. It contains the API credential.
+
+## Runtime state
+
+Because the service runs as the invoking user and sets that user's `HOME`, the default persistent state remains under:
+
+```text
+~/.local/state/stellar_alert_case/
+```
+
+This includes the SQLite queue/checkpoints, process lock, and relay logs.
+
+## Receiver outage behavior
+
+If a destination TCP listener becomes unreachable, queued unsent data is retained. The relay enters its retry/recovery path instead of marking those records as sent.
 
 <CardGroup cols={2}>
   <Card title="Configuration" icon="gear" href="/configuration">
-    Review stream requirements and available options.
+    Review stream, state, and credential options.
   </Card>
   <Card title="Troubleshooting" icon="wrench" href="/troubleshooting">
-    Diagnose configuration and delivery problems.
+    Diagnose service, API, and delivery problems.
   </Card>
 </CardGroup>
