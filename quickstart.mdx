@@ -1,9 +1,11 @@
 ---
 title: "Quickstart"
-description: "Configure Stellar Relay with the interactive wizard or run it manually."
+description: "Validate Stellar Relay in the foreground, then move the verified configuration to systemd."
 ---
 
 # Quickstart
+
+For a new deployment, validate the data path **in the foreground first**. After Alert and Case delivery work as expected, use the Setup Wizard once to install the verified configuration as a systemd service.
 
 ## 1. Get the script
 
@@ -12,72 +14,152 @@ git clone https://github.com/xdr-labs/Stellar-Case-Alert-to-Sylog.git
 cd Stellar-Case-Alert-to-Sylog
 ```
 
-Python 3.9+ is required. The daemon uses the Python standard library only.
+Python 3.9+ is required.
 
-## 2. Run the setup wizard
+You need:
+
+- network access to the Stellar Cyber API
+- network access to the destination TCP listener
+- an email-format Stellar Cyber User ID
+- an All-Access API token
+
+## 2. Set the token for foreground testing
 
 ```bash
-python3 Stellar_Alert_Case_Syslog.py
+export STELLAR_TOKEN='YOUR_ALL_ACCESS_TOKEN'
 ```
 
-or:
+Using the environment variable avoids placing the token directly in shell history.
+
+## 3. Test Alert forwarding first
+
+Start with Alert only. Do not use the Wizard or systemd yet.
+
+```bash
+python3 Stellar_Alert_Case_Syslog.py \
+  --host YOUR_STELLAR_HOST \
+  --userid YOUR_USER_EMAIL \
+  --alert-interval 60 \
+  --alert-syslog-ip 10.10.10.20 \
+  --alert-syslog-port 5201 \
+  --initial-lookback-hours 0 \
+  --debug
+```
+
+Confirm that:
+
+- the process starts without authentication/API errors
+- Alert records arrive at the TCP receiver
+- each received line is one JSON object
+
+`--initial-lookback-hours 0` limits the initial fetch to a one-minute window. For Alert, the window is anchored to the stable fetch cutoff.
+
+Let it run for a few cycles, then press **Ctrl+C**.
+
+<Note>
+  If production will use Alert only, you can skip the combined-stream test after this step succeeds.
+</Note>
+
+## 4. Test Alert and Case together
+
+If production will use both streams:
+
+```bash
+python3 Stellar_Alert_Case_Syslog.py \
+  --host YOUR_STELLAR_HOST \
+  --userid YOUR_USER_EMAIL \
+  --alert-interval 60 \
+  --alert-syslog-ip 10.10.10.20 \
+  --alert-syslog-port 5201 \
+  --case-interval 300 \
+  --case-syslog-ip 10.10.10.20 \
+  --case-syslog-port 5202 \
+  --initial-lookback-hours 0 \
+  --debug
+```
+
+Verify Alert and Case records at their configured destinations, then press **Ctrl+C**.
+
+The two streams may use the same receiver or different IP/port combinations.
+
+## 5. Move the verified settings to systemd
+
+Run the Wizard:
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py --setup
 ```
 
-The wizard asks for:
+Enter the values that passed foreground testing:
 
-- Stellar host, user ID, and All-Access API token
-- Alert and/or Case forwarding
-- interval, destination IP, and TCP port for each enabled stream
-- first-run lookback
-- whether to install and start systemd automatically
+1. Stellar Cyber host
+2. email-format User ID
+3. All-Access API token
+4. Alert enabled/disabled
+5. Case enabled/disabled
+6. interval and destination for each enabled stream
+7. initial lookback
 
-Default values:
+When asked:
 
-| Setting | Default |
-|---|---:|
-| Alert | enabled |
-| Alert interval | 60 sec |
-| Alert port | 5201 |
-| Case | disabled |
-| Case interval | 300 sec |
-| Case port | 5202 |
-| Initial lookback | 48 hours |
+```text
+Run continuously with systemd (auto-start on boot)?
+```
 
-`--initial-lookback-hours 0` means the most recent 1 minute.
+choose **Yes**.
 
-## 3. Choose service operation
-
-Answer **Yes** to the systemd question to install, enable, and start:
+The Wizard installs, enables, and starts:
 
 ```text
 stellar-alert-case-syslog.service
 ```
 
-Verify:
+## 6. Verify production operation
 
 ```bash
 sudo systemctl status stellar-alert-case-syslog
+systemctl is-enabled stellar-alert-case-syslog
 sudo journalctl -u stellar-alert-case-syslog -n 20 --no-pager
 ```
 
-## Manual CLI
+Confirm there are no repeating API/authentication/TCP delivery errors and that receiver data continues to arrive.
 
-Use `STELLAR_TOKEN` instead of embedding the token in shell history:
+## 7. Routine log checks
+
+Live logs:
 
 ```bash
-export STELLAR_TOKEN='YOUR_TOKEN'
-
-python3 Stellar_Alert_Case_Syslog.py \
-  --host YOUR_STELLAR_HOST \
-  --userid YOUR_USER_ID \
-  --alert-interval 60 \
-  --alert-syslog-ip 10.10.10.20 \
-  --alert-syslog-port 5201
+sudo journalctl -u stellar-alert-case-syslog -f
 ```
 
-Alert and Case each require a complete `interval + IP + port` set.
+Recent logs:
 
-For all options and Case defaults, see [Configuration](/configuration).
+```bash
+sudo journalctl -u stellar-alert-case-syslog -n 50 --no-pager
+```
+
+Today's logs:
+
+```bash
+sudo journalctl -u stellar-alert-case-syslog --since today --no-pager
+```
+
+Pressing **Ctrl+C** while following the journal stops only the log view, not the service.
+
+## Recommended deployment flow
+
+```text
+Download / clone
+      ↓
+Foreground Alert test
+      ↓
+Foreground Alert + Case test (if required)
+      ↓
+Setup Wizard with verified values
+      ↓
+Enable systemd
+      ↓
+Monitor with journalctl
+```
+
+For all CLI options and defaults, see [Configuration](/configuration).
