@@ -1,77 +1,103 @@
 ---
 title: "Configuration"
-description: "Configure alert and case streams, destinations, and case options."
+description: "Reference for the setup wizard, stream options, credentials, state, and logging."
 ---
 
-The relay treats alert and case forwarding as two independently configured streams. Each stream has its own interval and destination.
+The relay supports both an interactive setup wizard and the original CLI interface.
+
+## Authentication and global options
+
+| Option | Purpose |
+| --- | --- |
+| `--setup` | Run the interactive setup/systemd wizard |
+| `--host` | Stellar Cyber host |
+| `--userid` | Stellar Cyber user ID |
+| `--token` | All-Access API token |
+| `STELLAR_TOKEN` | Preferred environment-variable source for the API token |
+| `--initial-lookback-hours` | First-run lookback when no checkpoint exists; `0` means last 1 minute |
+| `--backfill DAYS` | Fetch/send the last N days every cycle, ignoring normal checkpoints |
+| `--db-path` | SQLite queue/checkpoint database path |
+| `--log-dir` | Send/fetch log directory |
+| `--lock-path` | Single-instance lock path |
+| `--send-log-retention-days` | Retention for send summary logs |
+| `--debug` | Print fetch/enqueue/send diagnostics to stderr |
+
+<Note>
+For manual operation, using `STELLAR_TOKEN` is preferable to placing the token directly on the command line.
+</Note>
 
 ## Alert stream
 
-| Option | Purpose | Example |
+| Option | Purpose | Default/example |
 | --- | --- | --- |
-| `--alert-interval` | Alert fetch interval | `60` |
-| `--alert-syslog-ip` | Alert destination IP address | `10.10.10.20` |
-| `--alert-syslog-port` | Alert destination TCP port | `5201` |
+| `--alert-interval SEC` | Alert fetch/send interval | `60` in the wizard |
+| `--alert-syslog-ip IP` | Alert destination IPv4/IPv6 address | required when enabled |
+| `--alert-syslog-port PORT` | Alert destination TCP port | `5201` in the wizard |
+| `--alert-fetch-stability-lag-sec SEC` | Closed-window watermark lag for incremental alert fetch | `120` |
+| `--alert-sent-retention-minutes` | Retain already-sent alert queue rows for this many minutes | `10` |
 
-A valid alert stream requires all three options.
-
-```bash
---alert-interval 60 \
---alert-syslog-ip 10.10.10.20 \
---alert-syslog-port 5201
-```
+All three stream options—interval, IP, and port—must be supplied together.
 
 ## Case stream
 
-| Option | Purpose | Example |
+| Option | Purpose | Default/example |
 | --- | --- | --- |
-| `--case-interval` | Case fetch interval | `3600` |
-| `--case-syslog-ip` | Case destination IP address | `10.10.10.20` |
-| `--case-syslog-port` | Case destination TCP port | `5142` |
-| `--case-include-summary` | Include case summary data | enabled |
-| `--no-case-format-summary` | Disable additional case-summary formatting | enabled |
-| `--case-fetch-timeout` | Case fetch timeout | `90` |
+| `--case-interval SEC` | Case fetch/send interval | `300` in the wizard |
+| `--case-syslog-ip IP` | Case destination IPv4/IPv6 address | required when enabled |
+| `--case-syslog-port PORT` | Case destination TCP port | `5202` in the wizard |
+| `--case-min-score` | Minimum case score to forward | `10` |
+| `--case-include-summary` / `--no-case-include-summary` | Include or omit case summary data | enabled |
+| `--case-format-summary` / `--no-case-format-summary` | Enable or disable case-summary formatting | enabled |
+| `--case-fetch-limit` | Case API fetch page limit | `200` |
 
-A valid case stream requires the interval, destination IP, and destination port.
-
-```bash
---case-interval 3600 \
---case-syslog-ip 10.10.10.20 \
---case-syslog-port 5142 \
---case-include-summary \
---no-case-format-summary \
---case-fetch-timeout 90
-```
+<Warning>
+The wizard-enabled script documented here does not expose `--case-fetch-timeout`. Do not copy that option from older relay examples.
+</Warning>
 
 ## Stream state rules
 
 <Steps>
   <Step title="No options for a stream">
-    If every option for a stream is omitted, that stream is disabled.
+    If all three required options for a stream are omitted, that stream is disabled.
   </Step>
   <Step title="Partial configuration">
-    If configuration for a stream is started but a required option is missing, that stream is an error.
+    If any required stream option is supplied, all three must be present.
   </Step>
-  <Step title="Complete configuration">
-    When all required options are present, the stream can run. Alert and case streams can both be enabled in the same process.
+  <Step title="Input validation">
+    Intervals must be positive, destination IPs must be valid IPv4/IPv6 addresses, and ports must be between 1 and 65535.
+  </Step>
+  <Step title="At least one stream">
+    Alert, Case, or both must be fully configured.
   </Step>
 </Steps>
 
-## Separate destinations
+## Persistent state
 
-Alert and case streams have separate IP and port options, so they can be sent to independent listeners.
+Unless overridden, runtime state is stored below:
 
 ```text
-Alerts -> 10.10.10.20:5201
-Cases  -> 10.10.10.30:5142
+~/.local/state/stellar_alert_case/
+├── queue.db
+├── stellar_alert_case.lock
+└── logs/
 ```
 
-They can also use the same downstream SIEM/SOC receiver when one listener handles both record types.
+The SQLite database persists queued records and checkpoints across process restarts. Unsent records are retained when the TCP destination is unavailable.
+
+## Backfill
+
+`--backfill DAYS` is a special replay mode. It fetches/sends the requested historical window every cycle and ignores normal checkpoints.
+
+Use it deliberately because replaying a window can resend records.
 
 ## Debug mode
 
-Use `--debug` only while troubleshooting.
+```bash
+python3 Stellar_Alert_Case_Syslog.py ... --debug
+```
+
+Use debug mode for troubleshooting and disable it when the additional output is no longer needed.
 
 <Info>
-Although the destination option names contain `syslog`, the documented payload format is newline-delimited JSON (NDJSON) over TCP. Configure the receiving parser accordingly.
+Although option names contain `syslog`, the payload format is newline-delimited JSON (NDJSON) over TCP.
 </Info>
