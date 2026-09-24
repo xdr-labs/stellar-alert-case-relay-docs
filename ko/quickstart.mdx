@@ -40,9 +40,12 @@ export STELLAR_TOKEN='YOUR_ALL_ACCESS_TOKEN'
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py \
+  --host YOUR_STELLAR_HOST \
+  --userid YOUR_USER_ID \
   --alert-interval 60 \
   --alert-syslog-ip 10.10.10.20 \
   --alert-syslog-port 5201 \
+  --initial-lookback-hours 0 \
   --debug
 ```
 
@@ -54,6 +57,8 @@ python3 Stellar_Alert_Case_Syslog.py \
 
 몇 번의 fetch cycle 동안 정상 동작하는 것을 확인한 뒤 **Ctrl+C**로 종료합니다.
 
+테스트에서는 `--initial-lookback-hours 0`을 사용해 checkpoint가 없을 때 최근 1분만 조회합니다. 처음부터 많은 과거 데이터를 전송하는 것을 피할 수 있습니다.
+
 <Note>
 운영에서도 Alert만 사용할 예정이라면 이 테스트가 성공한 뒤 Alert+Case 동시 테스트는 건너뛰고 최종 운영 설정으로 넘어가도 됩니다.
 </Note>
@@ -64,12 +69,15 @@ python3 Stellar_Alert_Case_Syslog.py \
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py \
+  --host YOUR_STELLAR_HOST \
+  --userid YOUR_USER_ID \
   --alert-interval 60 \
   --alert-syslog-ip 10.10.10.20 \
   --alert-syslog-port 5201 \
   --case-interval 300 \
   --case-syslog-ip 10.10.10.20 \
   --case-syslog-port 5202 \
+  --initial-lookback-hours 0 \
   --debug
 ```
 
