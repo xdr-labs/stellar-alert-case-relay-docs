@@ -1,188 +1,83 @@
 ---
 title: "Quickstart"
-description: "Test the relay in the foreground, then move the verified configuration to systemd."
+description: "Configure Stellar Relay with the interactive wizard or run it manually."
 ---
 
-For a new deployment, **test the relay manually in the foreground first**. After Alert and Case delivery are confirmed, run the Setup Wizard once to install the final configuration as a systemd service.
+# Quickstart
 
-This keeps initial testing simple and avoids installing a service before the API and receiver settings are proven.
-
-## 1. Download the script
+## 1. Get the script
 
 ```bash
-curl -fL \
-  -o Stellar_Alert_Case_Syslog.py \
-  https://raw.githubusercontent.com/xdr-labs/Stellar-Case-Alert-to-Sylog/main/Stellar_Alert_Case_Syslog.py
+git clone https://github.com/xdr-labs/Stellar-Case-Alert-to-Sylog.git
+cd Stellar-Case-Alert-to-Sylog
 ```
 
-You need:
+Python 3.9+ is required. The daemon uses the Python standard library only.
 
-- Python 3
-- Network access to the Stellar Cyber API
-- Network access to the destination TCP listener
-- Stellar Cyber email-format User ID and All-Access API token
-- Linux with systemd for the final production step
-
-Replace the example receiver IPs and ports below with your actual values.
-
-## 2. Set the API token for testing
-
-For foreground tests, use `STELLAR_TOKEN` instead of placing the token directly in the command line:
+## 2. Run the setup wizard
 
 ```bash
-export STELLAR_TOKEN='YOUR_ALL_ACCESS_TOKEN'
+python3 Stellar_Alert_Case_Syslog.py
 ```
 
-## 3. Test Alert forwarding only
-
-Start with the simplest path: Alert only, foreground, no Wizard, no systemd.
-
-```bash
-python3 Stellar_Alert_Case_Syslog.py \
-  --host YOUR_STELLAR_HOST \
-  --userid YOUR_USER_EMAIL \
-  --alert-interval 60 \
-  --alert-syslog-ip 10.10.10.20 \
-  --alert-syslog-port 5201 \
-  --initial-lookback-hours 0 \
-  --debug
-```
-
-Confirm that:
-
-- The process starts without authentication or API errors.
-- Alert records arrive at the configured TCP receiver.
-- Each received record is one JSON object per line.
-
-Let it run for a few fetch cycles, then stop it with **Ctrl+C**.
-
-The test uses `--initial-lookback-hours 0`, which limits the initial fetch to a 1-minute window. For Alert, that window ends at the configured stability cutoff; for Case, it is based on the current time.
-
-<Note>
-If you only plan to operate Alert forwarding, you can skip the combined test and continue to the production setup step after this test succeeds.
-</Note>
-
-## 4. Test Alert and Case together
-
-If both streams will be used in production, test them together before installing systemd:
-
-```bash
-python3 Stellar_Alert_Case_Syslog.py \
-  --host YOUR_STELLAR_HOST \
-  --userid YOUR_USER_EMAIL \
-  --alert-interval 60 \
-  --alert-syslog-ip 10.10.10.20 \
-  --alert-syslog-port 5201 \
-  --case-interval 300 \
-  --case-syslog-ip 10.10.10.20 \
-  --case-syslog-port 5202 \
-  --initial-lookback-hours 0 \
-  --debug
-```
-
-Confirm that both Alert and Case records arrive at their configured receivers.
-
-The two streams may use the same receiver or different IP/port combinations.
-
-After delivery is confirmed, stop the foreground process with **Ctrl+C**.
-
-## 5. Move the verified configuration to production
-
-Now run the Setup Wizard:
+or:
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py --setup
 ```
 
-Enter the same values that worked during the foreground tests:
+The wizard asks for:
 
-1. Stellar Cyber host
-2. User ID
-3. All-Access API token
-4. Alert enabled/disabled
-5. Case enabled/disabled
-6. Verified interval and destination for each enabled stream
-7. Initial lookback
+- Stellar host, user ID, and All-Access API token
+- Alert and/or Case forwarding
+- interval, destination IP, and TCP port for each enabled stream
+- first-run lookback
+- whether to install and start systemd automatically
 
-When asked:
+Default values:
+
+| Setting | Default |
+|---|---:|
+| Alert | enabled |
+| Alert interval | 60 sec |
+| Alert port | 5201 |
+| Case | disabled |
+| Case interval | 300 sec |
+| Case port | 5202 |
+| Initial lookback | 48 hours |
+
+`--initial-lookback-hours 0` means the most recent 1 minute.
+
+## 3. Choose service operation
+
+Answer **Yes** to the systemd question to install, enable, and start:
 
 ```text
-Run continuously with systemd (auto-start on boot)?
+stellar-alert-case-syslog.service
 ```
 
-choose **Yes**.
-
-The Wizard installs, enables, and starts `stellar-alert-case-syslog.service`, then displays the service status and recent journal entries.
-
-## 6. Verify the production service
-
-Check that the service is running and enabled at boot:
+Verify:
 
 ```bash
 sudo systemctl status stellar-alert-case-syslog
-systemctl is-enabled stellar-alert-case-syslog
-```
-
-Check the most recent logs:
-
-```bash
 sudo journalctl -u stellar-alert-case-syslog -n 20 --no-pager
 ```
 
-Confirm that there are no recurring API, authentication, or TCP delivery errors and that records continue to arrive at the receiver.
+## Manual CLI
 
-## 7. Monitor during normal operation
-
-For routine operation, you usually only need the service journal.
-
-### Watch logs live
+Use `STELLAR_TOKEN` instead of embedding the token in shell history:
 
 ```bash
-sudo journalctl -u stellar-alert-case-syslog -f
+export STELLAR_TOKEN='YOUR_TOKEN'
+
+python3 Stellar_Alert_Case_Syslog.py \
+  --host YOUR_STELLAR_HOST \
+  --userid YOUR_USER_ID \
+  --alert-interval 60 \
+  --alert-syslog-ip 10.10.10.20 \
+  --alert-syslog-port 5201
 ```
 
-Press **Ctrl+C** to stop watching the log. This does not stop the service.
+Alert and Case each require a complete `interval + IP + port` set.
 
-### Review recent logs
-
-```bash
-sudo journalctl -u stellar-alert-case-syslog -n 50 --no-pager
-```
-
-### Review today's logs
-
-```bash
-sudo journalctl -u stellar-alert-case-syslog --since today --no-pager
-```
-
-If the service is active and the journal shows normal fetch/send activity without repeated errors, no additional operation is normally required.
-
-## Recommended deployment flow
-
-```text
-Download script
-      |
-      v
-Foreground Alert test
-      |
-      v
-Foreground Alert + Case test (if Case is required)
-      |
-      v
-Setup Wizard with verified values
-      |
-      v
-Enable systemd
-      |
-      v
-Check journal during normal operation
-```
-
-<CardGroup cols={2}>
-  <Card title="Configuration" icon="gear" href="/configuration">
-    Full option reference.
-  </Card>
-  <Card title="systemd operations" icon="server" href="/operations">
-    Service management commands.
-  </Card>
-</CardGroup>
+For all options and Case defaults, see [Configuration](/configuration).
