@@ -1,71 +1,47 @@
 ---
-title: "Run continuously with systemd"
-description: "Install and operate the relay as a systemd service."
+title: "Operations"
+description: "Operate the Stellar Relay systemd service and local runtime state."
 ---
 
-## Install
+# Operations
 
-Run the setup wizard:
-
-```bash
-python3 Stellar_Alert_Case_Syslog.py --setup
-```
-
-After configuration, answer **Yes** to:
-
-```text
-Run continuously with systemd (auto-start on boot)?
-```
-
-The wizard installs, enables, and starts `stellar-alert-case-syslog.service`. Sudo access is required.
-
-## Common commands
-
-### Status
+## Service status
 
 ```bash
 sudo systemctl status stellar-alert-case-syslog
 ```
 
-### Follow logs
+## Follow logs
 
 ```bash
 sudo journalctl -u stellar-alert-case-syslog -f
 ```
 
-### Recent logs
+Recent logs only:
 
 ```bash
-sudo journalctl -u stellar-alert-case-syslog -n 50 --no-pager
+sudo journalctl -u stellar-alert-case-syslog -n 100 --no-pager
 ```
 
-### Restart
+## Restart
 
 ```bash
 sudo systemctl restart stellar-alert-case-syslog
 ```
 
-### Confirm boot startup
-
-```bash
-systemctl is-enabled stellar-alert-case-syslog
-```
-
-<Note>
-An active service confirms that the process is running. Check the journal to confirm Stellar API fetch and TCP delivery.
-</Note>
-
 ## Reconfigure
 
-Run the wizard again and choose systemd installation:
+Run the wizard again:
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py --setup
 ```
 
-The installed configuration is replaced and the service is restarted.
+Review the summary before applying the new service configuration.
 
 ## Installed files
+
+The wizard uses:
 
 ```text
 /usr/local/lib/stellar-alert-case/Stellar_Alert_Case_Syslog.py
@@ -73,22 +49,21 @@ The installed configuration is replaced and the service is restarted.
 /etc/systemd/system/stellar-alert-case-syslog.service
 ```
 
-The API token is stored in the protected environment file, not in the systemd command line.
+The token environment file is root-only. The service uses automatic restart and a restrictive umask.
 
-<Warning>
-Do not copy the contents of `/etc/default/stellar-alert-case-syslog` into support tickets or shared logs.
-</Warning>
+## Runtime state
 
-## Persistent state
-
-By default, queue/checkpoint data and logs are stored under:
+By default:
 
 ```text
 ~/.local/state/stellar_alert_case/
+├── queue.db
+├── logs/
+└── stellar_alert_case.lock
 ```
 
-If a TCP receiver becomes unavailable, unsent data remains queued for retry.
+Do not run multiple instances against the same state directory.
 
-<Card title="Troubleshooting" icon="wrench" href="/troubleshooting">
-  Diagnose service, API, and delivery problems.
-</Card>
+## Backfill
+
+`--backfill DAYS` intentionally re-fetches historical data and can resend records. Use it only for controlled testing or recovery.
