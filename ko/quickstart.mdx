@@ -1,61 +1,42 @@
 ---
 title: "빠른 시작"
 sidebarTitle: "빠른 시작"
-description: "대화형 Wizard 또는 기존 CLI로 Alert/Case Relay를 구성합니다."
+description: "Stellar Alert & Case Relay를 다운로드하고 설정·실행합니다."
 ---
 
-새 Relay를 구성할 때는 대화형 Setup Wizard 사용을 권장합니다. 기존 CLI 방식도 자동화 또는 foreground 실행을 위해 그대로 사용할 수 있습니다.
+새 Relay는 대화형 Setup Wizard로 구성하는 것을 권장합니다. 기존 CLI 방식도 그대로 사용할 수 있습니다.
 
-## 스크립트 버전 확인
-
-이 문서는 `--setup`을 지원하는 Wizard 버전을 기준으로 합니다.
+## 1. 다운로드
 
 ```bash
-python3 Stellar_Alert_Case_Syslog.py --help | grep -- --setup
+curl -fL \
+  -o Stellar_Alert_Case_Syslog.py \
+  https://raw.githubusercontent.com/xdr-labs/Stellar-Case-Alert-to-Sylog/main/Stellar_Alert_Case_Syslog.py
 ```
 
-출력에 `--setup`이 있어야 합니다. 없다면 Wizard 사용 전에 런타임 스크립트를 최신 버전으로 교체하십시오.
-
-## 사전 요구사항
-
-Relay 호스트에 다음이 필요합니다.
+필요한 환경:
 
 - Python 3
 - Stellar Cyber API로의 네트워크 연결
-- 각 TCP 수신 대상까지의 네트워크 연결
-- 유효한 Stellar Cyber User ID와 All-Access API Token
-- 자동 systemd 설치를 사용할 경우 Linux + systemd
+- 대상 TCP listener로의 네트워크 연결
+- Stellar Cyber User ID와 All-Access API token
+- systemd 자동 설치를 사용할 경우 Linux + systemd
 
-## 권장: 대화형 Setup Wizard
-
-인자 없이 실행합니다.
+## 2. Setup Wizard 실행
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py
 ```
 
-또는 명시적으로 Wizard를 실행합니다.
+또는:
 
 ```bash
 python3 Stellar_Alert_Case_Syslog.py --setup
 ```
 
-Wizard는 순서대로 다음을 묻습니다.
+Wizard에서 Stellar Cyber host, User ID, API token, 사용할 스트림, 전송 주기, 목적지 IP/port, 최초 lookback을 입력합니다.
 
-1. Stellar Cyber host
-2. User ID
-3. All-Access API token
-4. Alert forwarding 사용 여부
-5. Case forwarding 사용 여부
-6. 활성화한 각 스트림의 interval, destination IP, TCP port
-7. 최초 lookback 시간
-8. systemd로 상시 실행할지 여부
-
-Alert와 Case 중 최소 하나는 활성화해야 합니다.
-
-### Wizard 기본값
-
-| 항목 | 기본값 |
+| 기본값 | 값 |
 | --- | ---: |
 | Alert | 활성화 |
 | Case | 비활성화 |
@@ -65,44 +46,34 @@ Alert와 Case 중 최소 하나는 활성화해야 합니다.
 | Case port | 5202 |
 | Initial lookback | 48시간 |
 
-Checkpoint가 없는 최초 실행에서 최근 1분만 조회하려면 Initial lookback에 `0`을 입력합니다.
+Alert와 Case 중 최소 하나는 활성화해야 합니다. Initial lookback `0`은 checkpoint가 없을 때 최근 1분을 의미합니다.
 
-## systemd 자동 설치
+## 3. 실행 방식 선택
 
-Wizard 마지막 질문에서 **Yes**를 선택합니다.
+마지막 질문:
 
 ```text
 Run continuously with systemd (auto-start on boot)?
 ```
 
-필요한 경우 sudo 비밀번호를 묻습니다. 이후 스크립트가 자동으로:
+일반적인 상시 운영은 **Yes**를 선택합니다. 스크립트가 `stellar-alert-case-syslog.service`를 설치·활성화·시작하고 상태와 최근 로그를 보여줍니다.
 
-- `/usr/local/lib/stellar-alert-case/Stellar_Alert_Case_Syslog.py`에 실행 파일 복사
-- `/etc/default/stellar-alert-case-syslog`에 `STELLAR_TOKEN` 저장
-- Token 파일 권한을 `0600`으로 설정
-- `/etc/systemd/system/stellar-alert-case-syslog.service` 생성
-- `systemctl daemon-reload` 실행
-- 부팅 자동 시작 enable
-- 서비스 즉시 start/restart
-- `systemctl status` 출력
-- 최근 journal 로그 출력
-- active + enabled 상태 확인
+**No**를 선택하면 동일 설정의 수동 명령을 출력하고 foreground 실행 여부를 묻습니다.
 
-<Note>
-API token은 systemd `ExecStart` 명령행에 넣지 않고 보호된 EnvironmentFile에서 읽습니다.
-</Note>
+## 4. 서비스 확인
 
-systemd 설치 질문에 **No**를 선택하면 동일 설정의 수동 실행 명령을 출력하고, foreground로 즉시 실행할지도 다시 묻습니다.
+```bash
+sudo systemctl status stellar-alert-case-syslog
+sudo journalctl -u stellar-alert-case-syslog -n 20 --no-pager
+```
 
-## 수동 CLI 사용
+## 수동 CLI 예제
 
-수동 실행 시 token이 명령행에 노출되지 않도록 `STELLAR_TOKEN` 환경변수 사용을 권장합니다.
+수동 실행에서는 API token을 명령행에 직접 넣지 않도록 `STELLAR_TOKEN` 사용을 권장합니다.
 
 ```bash
 export STELLAR_TOKEN='YOUR_ALL_ACCESS_TOKEN'
 ```
-
-`--token` 옵션도 사용할 수 있지만 shell history나 process list에 노출될 수 있습니다.
 
 ### Alert만 전달
 
@@ -134,38 +105,11 @@ python3 Stellar_Alert_Case_Syslog.py \
   --case-syslog-port 5202
 ```
 
-Alert와 Case는 같은 수신기로 보내거나 서로 다른 대상으로 전송할 수 있습니다.
-
-## 입력 검증
-
-| 스트림 | 필수 옵션 |
-| --- | --- |
-| Alert | `--alert-interval`, `--alert-syslog-ip`, `--alert-syslog-port` |
-| Case | `--case-interval`, `--case-syslog-ip`, `--case-syslog-port` |
-
-다음 설정은 시작 전에 오류로 처리됩니다.
-
-- 스트림의 필수 옵션 일부만 지정
-- 1초 미만 interval
-- 잘못된 IPv4/IPv6 주소
-- `1-65535` 범위를 벗어난 port
-- Alert/Case 모두 비활성화
-
-## 수신 데이터
-
-Relay는 TCP를 통해 JSON 객체 하나를 한 줄씩 전송합니다.
-
-```text
-{one JSON object}\n
-{next JSON object}\n
-...
-```
-
 <CardGroup cols={2}>
-  <Card title="설정 참고" icon="gear" href="/ko/configuration">
-    CLI와 런타임 옵션 전체를 확인합니다.
+  <Card title="설정" icon="gear" href="/ko/configuration">
+    전체 옵션을 확인합니다.
   </Card>
   <Card title="systemd 운영" icon="server" href="/ko/operations">
-    자동 설치된 서비스를 관리합니다.
+    서비스 운영 명령을 확인합니다.
   </Card>
 </CardGroup>
