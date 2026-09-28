@@ -1,13 +1,13 @@
 ---
 title: "Stellar Relay"
-description: "Forward Stellar Cyber Alerts and Cases as durable NDJSON streams over TCP."
+description: "Forward Stellar Cyber Alerts and Cases as NDJSON over TCP with local queueing and checkpoints."
 ---
 
 # Stellar Relay
 
-Stellar Relay is a lightweight Python daemon that polls **Stellar Cyber Alerts and Cases**, keeps durable local queue/checkpoint state, and forwards enabled streams as **NDJSON over TCP**.
+Stellar Relay is a lightweight Python service that polls **Stellar Cyber Alerts and Cases**, stores queue and checkpoint state in SQLite, and forwards enabled data as **NDJSON over TCP**.
 
-> Historical option names contain "syslog", but the wire format is newline-delimited JSON, not RFC 5424 syslog text.
+> Some legacy option names contain "syslog", but the payload is newline-delimited JSON, not RFC 5424 syslog.
 
 ## How it works
 
@@ -37,7 +37,7 @@ Alert and Case streams are independent. Run Alert only, Case only, or both.
     Configure receivers for NDJSON over TCP.
   </Card>
   <Card title="Troubleshooting" icon="wrench" href="/troubleshooting">
-    Diagnose service, API, receiver, and state issues.
+    Diagnose service, API, receiver, queue, and checkpoint issues.
   </Card>
 </CardGroup>
 

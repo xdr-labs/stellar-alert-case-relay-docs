@@ -5,7 +5,7 @@ description: "Stellar Relay 문제를 증상별로 진단합니다."
 
 # Troubleshooting
 
-## Service가 시작되지 않음
+## 서비스가 시작되지 않음
 
 ```bash
 sudo systemctl status stellar-alert-case-syslog
@@ -23,15 +23,15 @@ python3 Stellar_Alert_Case_Syslog.py --setup
 확인 항목:
 
 - Stellar Host / User ID
-- All-Access API Token 유효성
+- All-Access API 토큰 유효성
 - Outbound HTTPS 연결
-- systemd 실행 시 Token Environment File
+- systemd 실행 시 토큰 환경 파일
 
-Wizard/Service는 `STELLAR_TOKEN`을 사용합니다. Token을 Script에 hard-code하지 마십시오.
+Wizard/Service는 `STELLAR_TOKEN`을 사용합니다. 토큰을 스크립트에 직접 입력하지 마십시오.
 
 ## Alert 또는 Case가 들어오지 않음
 
-사용할 Stream에 다음 세 값이 모두 있는지 확인합니다.
+사용할 Alert/Case 유형에 다음 세 값이 모두 있는지 확인합니다.
 
 ```text
 interval
@@ -39,9 +39,9 @@ destination IP
 destination port
 ```
 
-First-run Lookback과 Stellar 측 실제 Data 존재 여부도 확인합니다.
+최초 조회 범위와 Stellar 측 실제 데이터 존재 여부도 확인합니다.
 
-## Receiver에 Data가 오지 않음
+## 수신기에 데이터가 오지 않음
 
 TCP 연결 확인:
 
@@ -49,15 +49,15 @@ TCP 연결 확인:
 nc -vz <DESTINATION_IP> <PORT>
 ```
 
-Receiver가 RFC Syslog가 아니라 **NDJSON over TCP**를 받도록 설정되어 있는지도 확인합니다.
+수신기가 RFC Syslog가 아니라 **NDJSON over TCP**를 받도록 설정되어 있는지도 확인합니다.
 
-Receiver가 Down이면 Record는 SQLite Queue에 Pending 상태로 남고 재시도됩니다.
+수신기가 중단되면 데이터는 SQLite 큐에 대기 상태로 남고 재시도됩니다.
 
 ## Another instance is already running
 
-같은 State/Lock Path는 한 Process만 사용해야 합니다.
+같은 상태/잠금 경로는 한 프로세스만 사용해야 합니다.
 
-Lock file을 삭제하기 전에 기존 Service/Process를 확인합니다.
+잠금 파일을 삭제하기 전에 기존 서비스/프로세스를 확인합니다.
 
 ```bash
 sudo systemctl status stellar-alert-case-syslog
@@ -66,8 +66,8 @@ ps -ef | grep Stellar_Alert_Case_Syslog.py
 
 ## JSON Parsing 실패
 
-Receiver는 LF로 끝나는 각 Line을 하나의 JSON object로 parse해야 합니다.
+수신기는 LF로 끝나는 각 줄을 하나의 JSON 객체로 처리해야 합니다.
 
-## Backfill 중 Duplicate 발생
+## Backfill 중 중복 데이터 발생
 
-정상 동작입니다. `--backfill DAYS`는 normal checkpoint를 무시하므로 historical record를 다시 보낼 수 있습니다.
+정상 동작입니다. `--backfill DAYS`는 일반 체크포인트를 무시하므로 과거 데이터를 다시 보낼 수 있습니다.
