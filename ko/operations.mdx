@@ -1,23 +1,23 @@
 ---
 title: "운영"
-description: "Stellar Relay systemd Service와 local runtime state를 운영합니다."
+description: "Stellar Relay systemd 서비스의 상태, 로그, 재시작과 로컬 저장 상태를 관리합니다."
 ---
 
 # 운영
 
-## Service 상태
+## 서비스 상태
 
 ```bash
 sudo systemctl status stellar-alert-case-syslog
 ```
 
-## Log 확인
+## 로그 확인
 
 ```bash
 sudo journalctl -u stellar-alert-case-syslog -f
 ```
 
-최근 log만 확인:
+최근 로그만 확인:
 
 ```bash
 sudo journalctl -u stellar-alert-case-syslog -n 100 --no-pager
@@ -49,7 +49,7 @@ python3 Stellar_Alert_Case_Syslog.py --setup
 
 Token environment file은 root-only 권한으로 저장됩니다.
 
-## Runtime State
+## 실행 상태
 
 기본 경로:
 
@@ -60,8 +60,8 @@ Token environment file은 root-only 권한으로 저장됩니다.
 └── stellar_alert_case.lock
 ```
 
-동일 State Directory를 사용하는 여러 Instance를 동시에 실행하지 마십시오.
+같은 상태 디렉터리를 사용하는 여러 인스턴스를 동시에 실행하지 마십시오.
 
 ## Backfill
 
-`--backfill DAYS`는 historical data를 다시 fetch하고 재전송할 수 있습니다. 테스트/복구 목적으로만 사용하십시오.
+`--backfill DAYS`는 과거 데이터를 다시 조회해 재전송할 수 있습니다. 테스트/복구 목적으로만 사용하십시오.
