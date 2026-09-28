@@ -1,6 +1,6 @@
 ---
 title: "빠른 시작"
-description: "Foreground에서 Stellar Relay를 먼저 검증한 뒤 검증된 설정을 systemd 운영으로 전환합니다."
+description: "Stellar Relay를 먼저 포그라운드에서 테스트한 뒤 검증된 설정으로 systemd 서비스를 구성합니다."
 ---
 
 # 빠른 시작
@@ -19,7 +19,7 @@ Python 3.9+가 필요합니다.
 필요한 항목:
 
 - Stellar Cyber API로의 네트워크 접속
-- 대상 TCP Listener로의 Network Access
+- 대상 TCP 수신기로의 네트워크 연결
 - **이메일 형식**의 Stellar Cyber User ID
 - All-Access API Token
 
@@ -52,12 +52,12 @@ python3 Stellar_Alert_Case_Syslog.py \
 - 설정한 TCP 수신기로 Alert가 들어오는지
 - 한 줄에 JSON Object 하나씩 수신되는지
 
-`--initial-lookback-hours 0`은 최초 조회 범위를 1분으로 제한합니다. Alert는 stable fetch cutoff를 기준으로 이 1분 window를 계산합니다.
+`--initial-lookback-hours 0`은 최초 조회 범위를 1분으로 제한합니다. Alert는 안정화 지연 시간을 반영해 이 1분 조회 구간를 계산합니다.
 
 몇 번의 Fetch Cycle을 확인한 뒤 **Ctrl+C**로 종료합니다.
 
 <Note>
-  운영에서도 Alert만 사용할 예정이라면 이 단계가 성공한 후 Alert+Case 동시 테스트는 건너뛰어도 됩니다.
+  운영에서도 Alert만 사용할 예정이라면 이 단계가 성공한 후 Alert와 Case 동시 테스트는 건너뛰어도 됩니다.
 </Note>
 
 ## 4. Alert와 Case를 함께 테스트
@@ -78,7 +78,7 @@ python3 Stellar_Alert_Case_Syslog.py \
   --debug
 ```
 
-Alert와 Case가 각각 설정한 Destination에 들어오는 것을 확인한 뒤 **Ctrl+C**로 종료합니다.
+Alert와 Case가 각각 설정한 목적지에 들어오는 것을 확인한 뒤 **Ctrl+C**로 종료합니다.
 
 두 데이터 유형은 같은 수신기를 사용해도 되고 서로 다른 IP/Port를 사용할 수도 있습니다.
 
