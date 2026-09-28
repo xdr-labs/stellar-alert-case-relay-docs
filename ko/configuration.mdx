@@ -31,10 +31,10 @@ Relay는 대화형 설정 마법사와 CLI 인터페이스를 모두 지원합�
 
 | 옵션 | 용도 | 기본값/예제 |
 | --- | --- | --- |
-| `--alert-interval SEC` | Alert fetch/send interval | Wizard 기본값 `60` |
+| `--alert-interval SEC` | Alert 조회/전송 주기 | Wizard 기본값 `60` |
 | `--alert-syslog-ip IP` | Alert 목적지 IPv4/IPv6 주소 | 활성화 시 필수 |
-| `--alert-syslog-port PORT` | Alert 목적지 TCP port | Wizard 기본값 `5201` |
-| `--alert-fetch-stability-lag-sec SEC` | 증분 Alert fetch의 closed-window watermark lag | `120` |
+| `--alert-syslog-port PORT` | Alert 목적지 TCP 포트 | Wizard 기본값 `5201` |
+| `--alert-fetch-stability-lag-sec SEC` | 증분 Alert fetch의 조회 종료 시점에 적용하는 안정화 지연 시간 | `120` |
 | `--alert-sent-retention-minutes` | 전송 완료 Alert 큐 항목 보존 시간 | `10` |
 
 Alert 스트림을 활성화하려면 interval, IP, port 세 옵션을 모두 지정해야 합니다.
@@ -43,12 +43,12 @@ Alert 스트림을 활성화하려면 interval, IP, port 세 옵션을 모두 �
 
 | 옵션 | 용도 | 기본값/예제 |
 | --- | --- | --- |
-| `--case-interval SEC` | Case fetch/send interval | Wizard 기본값 `300` |
+| `--case-interval SEC` | Case 조회/전송 주기 | Wizard 기본값 `300` |
 | `--case-syslog-ip IP` | Case 목적지 IPv4/IPv6 주소 | 활성화 시 필수 |
-| `--case-syslog-port PORT` | Case 목적지 TCP port | Wizard 기본값 `5202` |
-| `--case-min-score` | 전달할 Case 최소 score | `10` |
-| `--case-include-summary` / `--no-case-include-summary` | Case summary 포함/제외 | enabled |
-| `--case-format-summary` / `--no-case-format-summary` | Case summary formatting 활성/비활성 | enabled |
+| `--case-syslog-port PORT` | Case 목적지 TCP 포트 | Wizard 기본값 `5202` |
+| `--case-min-score` | 전달할 Case 최소 점수 | `10` |
+| `--case-include-summary` / `--no-case-include-summary` | Case 요약 포함/제외 | enabled |
+| `--case-format-summary` / `--no-case-format-summary` | Case 요약 형식 적용/해제 | enabled |
 | `--case-fetch-limit` | Case API fetch page limit | `200` |
 
 
@@ -62,7 +62,7 @@ Alert 스트림을 활성화하려면 interval, IP, port 세 옵션을 모두 �
     필수 옵션 중 하나라도 지정했다면 interval, IP, port 세 가지를 모두 제공해야 합니다.
   </Step>
   <Step title="입력 검증">
-    Interval은 1 이상이어야 하고, destination은 유효한 IPv4/IPv6 주소여야 하며, port는 1-65535 범위여야 합니다.
+    주기는 1 이상이어야 하고, 목적지는 유효한 IPv4/IPv6 주소여야 하며, 포트는 1~65535 범위여야 합니다.
   </Step>
   <Step title="최소 하나의 스트림">
     Alert, Case 또는 둘 다 완전하게 구성되어야 합니다.
