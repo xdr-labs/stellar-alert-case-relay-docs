@@ -25,7 +25,7 @@ python3 Stellar_Alert_Case_Syslog.py --setup
 - Stellar Host / User ID
 - All-Access API 토큰 유효성
 - Outbound HTTPS 연결
-- systemd 실행 시 Token Environment File
+- systemd 실행 시 토큰 환경 파일
 
 Wizard/Service는 `STELLAR_TOKEN`을 사용합니다. 토큰을 스크립트에 직접 입력하지 마십시오.
 
@@ -39,7 +39,7 @@ destination IP
 destination port
 ```
 
-First-run Lookback과 Stellar 측 실제 Data 존재 여부도 확인합니다.
+최초 조회 범위와 Stellar 측 실제 데이터 존재 여부도 확인합니다.
 
 ## 수신기에 데이터가 오지 않음
 
@@ -68,6 +68,6 @@ ps -ef | grep Stellar_Alert_Case_Syslog.py
 
 수신기는 LF로 끝나는 각 줄을 하나의 JSON 객체로 처리해야 합니다.
 
-## Backfill 중 Duplicate 발생
+## Backfill 중 중복 데이터 발생
 
 정상 동작입니다. `--backfill DAYS`는 일반 체크포인트를 무시하므로 과거 데이터를 다시 보낼 수 있습니다.
