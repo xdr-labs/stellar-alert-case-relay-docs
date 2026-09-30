@@ -4,9 +4,9 @@
   "name": "Stellar Alert & Case Relay",
   "description": "Forward Stellar Cyber alerts and cases into existing SIEM and SOC workflows over TCP/NDJSON.",
   "colors": {
-    "primary": "#0F766E",
-    "light": "#14B8A6",
-    "dark": "#115E59"
+    "primary": "#1F59E0",
+    "light": "#2982E8",
+    "dark": "#5B8CFF"
   },
   "navigation": {
     "languages": [
