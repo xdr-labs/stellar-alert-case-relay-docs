@@ -2,4 +2,5 @@
   <rect x="4" y="4" width="56" height="56" rx="16" fill="#1F59E0"/>
   <path d="M15 22h17l-5-5 4-4 12 12-12 12-4-4 5-5H15z" fill="#fff"/>
   <path d="M49 42H32l5 5-4 4-12-12 12-12 4 4-5 5h17z" fill="#55C7F3" opacity=".95"/>
+  <circle cx="32" cy="32" r="3.2" fill="#FF9B1D"/>
 </svg>
