@@ -3,9 +3,22 @@ title: "Stellar Relay"
 description: "Forward Stellar Cyber Alerts and Cases as NDJSON over TCP with local queueing and checkpoints."
 ---
 
-# Stellar Relay
-
-Stellar Relay is a lightweight Python service that polls **Stellar Cyber Alerts and Cases**, stores queue and checkpoint state in SQLite, and forwards enabled data as **NDJSON over TCP**.
+<div className="xdr-hero">
+  <p className="xdr-kicker">Alert & Case integration</p>
+  <h1 className="xdr-hero-title">Move Stellar Cyber alerts and cases into the workflows you already run.</h1>
+  <p className="xdr-hero-copy">
+    Stellar Relay polls the Stellar Cyber API, keeps durable queue and checkpoint state in SQLite, and forwards enabled Alert and Case streams as NDJSON over TCP.
+  </p>
+  <div className="xdr-hero-actions">
+    <a className="xdr-hero-primary" href="/quickstart">Start the relay →</a>
+    <a className="xdr-hero-secondary" href="/output-format">Review output format</a>
+  </div>
+  <div className="xdr-signal-grid">
+    <div className="xdr-signal"><strong>Poll</strong><span>Read Alert and Case streams independently from the Stellar Cyber API.</span></div>
+    <div className="xdr-signal"><strong>Queue</strong><span>Keep checkpoints and pending delivery state locally for recovery.</span></div>
+    <div className="xdr-signal"><strong>Forward</strong><span>Deliver newline-delimited JSON over TCP into existing SIEM/SOC workflows.</span></div>
+  </div>
+</div>
 
 > Some legacy option names contain "syslog", but the payload is newline-delimited JSON, not RFC 5424 syslog.
 
