@@ -15,7 +15,7 @@ Relay는 대화형 설정 마법사와 CLI 인터페이스를 모두 지원합�
 | `--userid` | Stellar Cyber User ID (이메일 형식) |
 | `--token` | All-Access API 토큰 |
 | `STELLAR_TOKEN` | API 토큰을 전달하는 권장 환경변수 |
-| `--initial-lookback-hours` | checkpoint가 없는 최초 실행의 조회 범위. `0`은 1분 범위이며 Alert는 stability cutoff를 기준으로 계산 |
+| `--initial-lookback-hours` | checkpoint가 없는 최초 실행의 조회 범위(기본값 1시간). `0`은 1분 범위이며 Alert는 stability cutoff를 기준으로 계산 |
 | `--backfill DAYS` | 정상 checkpoint를 무시하고 매 주기마다 최근 N일 데이터를 다시 조회·전송 |
 | `--db-path` | SQLite 큐/체크포인트 DB 경로 |
 | `--log-dir` | 전송/조회 로그 디렉터리 |
